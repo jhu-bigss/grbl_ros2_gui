@@ -9,6 +9,7 @@ Ros backend for the GUI.
 ##############################################################################
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot
 
 import rclpy
 
@@ -23,20 +24,8 @@ class Backend(QtCore.QObject):
         self.node.declare_parameters(
             namespace='',
             parameters=[
-                ('machine_id', None),
                 ('port', None),
-                ('baudrate', None),
-                ('acceleration', None),  # mm / min^2
-                ('x_max', None),  # mm
-                ('y_max', None),  # mm
-                ('z_max', None),  # mm
-                ('default_v', None),  # mm / min
-                ('x_max_v', None),  # mm / min
-                ('y_max_v', None),  # mm / min
-                ('z_max_v', None),  # mm / min
-                ('x_steps', None),  # mm
-                ('y_steps', None),  # mm
-                ('z_steps', None),  # mm
+                ('baudrate', 0),
             ])
 
         self.shutdown_requested = False
@@ -51,6 +40,10 @@ class Backend(QtCore.QObject):
 
         self.node.destroy_node()
 
+    @pyqtSlot(object)
+    def set_ros_parameters(self, list_params):
+        self.node.set_parameters(list_params)
+
     def terminate_ros_spinner(self):
-        self.node.get_logger().info("shutdown requested [backend]")
+        self.node.get_logger().info("shutdown requested [ROS]")
         self.shutdown_requested = True

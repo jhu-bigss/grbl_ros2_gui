@@ -9,16 +9,14 @@ A pyqt-based application panel for interfacing with grbl devices
 ##############################################################################
 
 import sys, os, time
-from datetime import datetime
 from xml.dom.minidom import parse, Node, Element
 import locale
 import argparse
 import serial, serial.tools.list_ports
+from threading import Thread
 
 from PyQt5 import QtCore, QtWidgets, uic
-from PyQt5.QtCore import Qt, QCoreApplication, QObject, QThread, pyqtSignal, pyqtSlot, QModelIndex,  QItemSelectionModel, QFileInfo, QTranslator, QLocale, QSettings
-from PyQt5.QtGui import QKeySequence, QStandardItemModel, QStandardItem, QValidator, QPalette
-from PyQt5.QtWidgets import QDialog, QAbstractItemView, QMessageBox
+
 from grbl_ros2_gui.cn5X_config import *
 from grbl_ros2_gui.msgbox import *
 from grbl_ros2_gui.speedOverrides import *
@@ -39,17 +37,16 @@ from grbl_ros2_gui.cn5X_jog import dlgJog
 from grbl_ros2_gui.mainWindow import Ui_mainWindow
 from grbl_ros2_gui.ros_backend import Backend
 
-from threading import Thread
-
 import rclpy
 
-class upperCaseValidator(QValidator):
+class upperCaseValidator(QtGui.QValidator):
   def validate(self, string, pos):
-    return QValidator.Acceptable, string.upper(), posQDialog, QAbstractItemView, QMessageBox
+    return QtGui.QValidator.Acceptable, string.upper(), posQDialog, QtWidgets.QAbstractItemView, QtWidgets.QMessageBox
 
 class MainWindow(QtWidgets.QMainWindow):
 
-  request_shutdown = QtCore.pyqtSignal(name="requestShutdown")
+  set_ros_parameters = pyqtSignal(object, name="set_ros_parameters")
+  request_shutdown = pyqtSignal(name="requestShutdown")
 
   def __init__(self, parent=None):
 
@@ -64,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
     self.__gcode_recall_flag = False
     self.__gcode_current_txt = ""
 
-    self.__settings = QSettings(QSettings.NativeFormat, QSettings.UserScope, ORG_NAME, APP_NAME)
+    self.__settings = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, ORG_NAME, APP_NAME)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--connect", action="store_true", help=self.tr("Connect the serial port"))
@@ -77,9 +74,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # Retrouve le fichier de licence dans le même répertoire que l'exécutable
     self.__licenceFile = "{}/COPYING".format(app_path)
 
-    # Initialise la fenêtre princpale
     self.ui = Ui_mainWindow()
     self.ui.setupUi(self)
+    # self.ui = uic.loadUi(os.path.join(app_path, 'mainWindow.ui'), self)
 
     self.btnUrgencePictureLocale = ":/images/btnUrgence.svg"
     self.btnUrgenceOffPictureLocale = ":/images/btnUrgenceOff.svg"
@@ -147,15 +144,15 @@ class MainWindow(QtWidgets.QMainWindow):
     # On traite la langue locale.
     if self.__args.lang != None:
       # l'argument sur la ligne de commande est prioritaire.
-      langue = QLocale(self.__args.lang)
+      langue = QtCore.QLocale(self.__args.lang)
     else:
       # Si une langue est définie dans les settings, on l'applique
       settingsLang = self.__settings.value("lang", "default")
       if settingsLang != "default":
-        langue = QLocale(settingsLang)
+        langue = QtCore.QLocale(settingsLang)
       else:
         # On prend la locale du système par défaut
-        langue = QLocale()
+        langue = QtCore.QLocale()
 
     self.setTranslator(langue)
 
@@ -413,12 +410,6 @@ class MainWindow(QtWidgets.QMainWindow):
     # Restore le curseur souris sablier en fin d'initialisation
     QtWidgets.QApplication.restoreOverrideCursor()
     
-    ### GBGB tests ###
-    ###print(locale.getlocale(locale.LC_TIME))
-    ###print(datetime.now().strftime("%A %x %H:%M:%S"))
-    ### Pour debug de qwProgressBox ### self.__pBox.start()
-
-
   def populatePortList(self):
     ''' Rempli la liste des ports serie '''
     # Récupère le dernier utilisé dans les settings
@@ -1019,7 +1010,7 @@ class MainWindow(QtWidgets.QMainWindow):
         time.sleep(0.25)
         while self.__decode.get_etatMachine() != GRBL_STATUS_IDLE:
           # Process events to receive signals en attendant que le GCode soit traité
-          QCoreApplication.processEvents()
+          QtCore.QCoreApplication.processEvents()
         # En cas de probe en 2 fois, le second probe ne nécessite que la distance de pull off
         fineProbeDistance = probePullOff
       else: # doubleProbe == False
@@ -1296,7 +1287,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.__grblCom.gcodePush("G0X{}".format(-pullOffXY))
         time.sleep(0.25)
         while self.__decode.get_etatMachine() != GRBL_STATUS_IDLE:
-          QCoreApplication.processEvents()
+          QtCore.QCoreApplication.processEvents()
         fineProbeDistance = pullOffXY
       else:
         fineProbeDistance = length
@@ -1334,7 +1325,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.__grblCom.gcodePush("G0X{}".format(pullOffXY))
         time.sleep(0.25)
         while self.__decode.get_etatMachine() != GRBL_STATUS_IDLE:
-          QCoreApplication.processEvents()
+          QtCore.QCoreApplication.processEvents()
         fineProbeDistance = pullOffXY
       else:
         fineProbeDistance = length
@@ -1372,7 +1363,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.__grblCom.gcodePush("G0Y{}".format(-pullOffXY))
         time.sleep(0.25)
         while self.__decode.get_etatMachine() != GRBL_STATUS_IDLE:
-          QCoreApplication.processEvents()
+          QtCore.QCoreApplication.processEvents()
         fineProbeDistance = pullOffXY
       else:
         fineProbeDistance = length
@@ -1410,7 +1401,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.__grblCom.gcodePush("G0Y{}".format(pullOffXY))
         time.sleep(0.25)
         while self.__decode.get_etatMachine() != GRBL_STATUS_IDLE:
-          QCoreApplication.processEvents()
+          QtCore.QCoreApplication.processEvents()
         fineProbeDistance = pullOffXY
       else:
         fineProbeDistance = length
@@ -1845,6 +1836,11 @@ class MainWindow(QtWidgets.QMainWindow):
       self.__grblCom.startCom(serialDevice, baudRate)
       # Mémorise le dernier port série utilisé
       self.__settings.setValue("grblDevice", serialDevice)
+      # Set ROS parameters: serialPort and baudRate
+      self.set_ros_parameters.emit([
+                                    rclpy.parameter.Parameter('port', rclpy.Parameter.Type.STRING, serialDevice),
+                                    rclpy.parameter.Parameter('baudrate', rclpy.Parameter.Type.INTEGER, baudRate)
+                                   ])
     else:
       # Arret du comunicator
       self.__grblCom.stopCom()
@@ -1941,7 +1937,7 @@ class MainWindow(QtWidgets.QMainWindow):
       self.__jogModContinue = False
       while cnButton.isMouseDown():  # on envoi qu'après avoir relâché le bouton
         # Process events to receive signals en attendant que le bouton soit relâché;
-        QCoreApplication.processEvents()
+        QtCore.QCoreApplication.processEvents()
       # envoi de l'ordre jog
       self.__jog.on_jog(cnButton, e, jogDistance)
 
@@ -2070,12 +2066,12 @@ class MainWindow(QtWidgets.QMainWindow):
   @pyqtSlot(QtGui.QKeyEvent)
   def on_keyPressed(self, e):
     key = e.key()
-    if QKeySequence(key+int(e.modifiers())) == QKeySequence("Ctrl+C"):
+    if QtGui.QKeySequence(key+int(e.modifiers())) == QtGui.QKeySequence("Ctrl+C"):
       pass
-    elif QKeySequence(key+int(e.modifiers())) == QKeySequence("Ctrl+X"):
+    elif QtGui.QKeySequence(key+int(e.modifiers())) == QtGui.QKeySequence("Ctrl+X"):
       self.logGrbl.append("Ctrl+X")
       self.__grblCom.realTimePush(REAL_TIME_SOFT_RESET) # Envoi Ctrl+X.
-    elif key == Qt.Key_Up:
+    elif key == QtCore.Qt.Key_Up:
       # Rappel des dernières commandes GCode
       if len(self.__gcodes_stack) > 0:
         if self.__gcode_current_txt == "":
@@ -2087,7 +2083,7 @@ class MainWindow(QtWidgets.QMainWindow):
           self.ui.txtGCode.setSelection(0,len(self.ui.txtGCode.text()))
         elif self.__gcodes_stack_pos >= len(self.__gcodes_stack):
           self.__gcodes_stack_pos = len(self.__gcodes_stack) - 1
-    elif key == Qt.Key_Down:
+    elif key == QtCore.Qt.Key_Down:
       # Rappel des dernières commandes GCode
       if len(self.__gcodes_stack) > 0:
         self.__gcodes_stack_pos -= 1
@@ -2227,7 +2223,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Recherche la ligne dans la liste du fichier GCode
         ligne = self.__gcodeFile.getGCodeSelectedLine()[0]
         while ligne < self.ui.gcodeTable.model().rowCount():
-          idx = self.ui.gcodeTable.model().index(ligne, 0, QModelIndex())
+          idx = self.ui.gcodeTable.model().index(ligne, 0, QtCore.QModelIndex())
           if self.ui.gcodeTable.model().data(idx) == data:
             self.__gcodeFile.selectGCodeFileLine(ligne)
             break
@@ -2374,7 +2370,7 @@ class MainWindow(QtWidgets.QMainWindow):
       # Attente que le Hold soit termine
       self.log(logSeverity.info.value, self.tr("Holding cycle before stopping..."))
       while self.ui.lblEtat.text() == GRBL_STATUS_HOLD1:
-        QCoreApplication.processEvents()
+        QtCore.QCoreApplication.processEvents()
       # Puis, vide la file d'attente et envoie un SoftReset
       self.log(logSeverity.info.value, self.tr("Stopping cycle..."))
       self.__grblCom.clearCom() # Vide la file d'attente de communication
@@ -2385,7 +2381,7 @@ class MainWindow(QtWidgets.QMainWindow):
       self.__grblCom.realTimePush(REAL_TIME_FEED_HOLD)
       # Attente que le Hold soit termine
       while self.ui.lblEtat.text() != GRBL_STATUS_HOLD0:
-        QCoreApplication.processEvents()
+        QtCore.QCoreApplication.processEvents()
       # Puis, vide la file d'attente et envoie un SoftReset
       self.log(logSeverity.info.value, self.tr("Stopping cycle..."))
       self.__grblCom.clearCom() # Vide la file d'attente de communication
@@ -2606,10 +2602,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
   def on_menuLangue(self, action):
     if action.objectName() == "actionLangSystem":
-      langue = QLocale()
+      langue = QtCore.QLocale()
       self.__settings.remove("lang")
     else:
-      langue = QLocale(action.objectName())
+      langue = QtCore.QLocale(action.objectName())
       self.__settings.setValue("lang", action.objectName())
     # Active la nouvelle langue
     self.setTranslator(langue)
@@ -2640,13 +2636,13 @@ class MainWindow(QtWidgets.QMainWindow):
       self.ui.lblSerialLock.setStyleSheet(".QLabel{border-radius: 3px; background: red;}")
 
 
-  def setTranslator(self, langue: QLocale):
+  def setTranslator(self, langue: QtCore.QLocale):
     ''' Active la langue de l'interface '''
     global translator # Reutilise le translateur de l'objet app
     if not translator.load(langue, "{}/i18n/cn5X".format(app_path), "."):
       self.log(logSeverity.error.value, self.tr("Locale ({}) not usable, using default to english").format(locale.name()))
       #langue = QLocale(QLocale.French, QLocale.France)
-      langue = QLocale(QLocale.English, QLocale.UnitedKingdom)
+      langue = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedKingdom)
       translator.load(langue, "{}/i18n/cn5X".format(app_path), ".")
 
     # Install le traducteur et l'exécute sur les éléments déjà chargés
@@ -2663,7 +2659,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
           a.setChecked(False)
       else:
-        la = QLocale(a.objectName())
+        la = QtCore.QLocale(a.objectName())
         if la.language() == langue.language():
           self.ui.menuLangue.setIcon(a.icon())
           if settingsLang != "default":
@@ -2674,7 +2670,7 @@ class MainWindow(QtWidgets.QMainWindow):
           a.setChecked(False)
 
     # Sélectionne l'image du bouton d'urgence
-    if langue.language() == QLocale(QLocale.French, QLocale.France).language():
+    if langue.language() == QtCore.QLocale(QtCore.QLocale.French, QtCore.QLocale.France).language():
       self.btnUrgencePictureLocale = ":/cn5X/images/btnUrgence.svg"
       self.btnUrgenceOffPictureLocale = ":/cn5X/images/btnUrgenceOff.svg"
     else:
@@ -2714,19 +2710,19 @@ def main():
     print("")
 
     global translator
-    translator = QTranslator()
-    langue = QLocale(QLocale.French, QLocale.France)
+    translator = QtCore.QTranslator()
+    langue = QtCore.QLocale(QtCore.QLocale.French, QtCore.QLocale.France)
     translator.load(langue, "{}/i18n/cn5X".format(app_path), ".")
     app.installTranslator(translator)
+    app.setStyleSheet("QToolTip { background-color: rgb(247, 255, 192); color: rgb(0, 0, 63); }")
 
     # Définition de la locale pour affichage des dates dans la langue du systeme
     locale.setlocale(locale.LC_TIME, '')
 
-    window = MainWindow()
-
     backend = Backend()
+    window = MainWindow()
+    window.set_ros_parameters.connect(backend.set_ros_parameters)
     window.request_shutdown.connect(backend.terminate_ros_spinner)
-    app.setStyleSheet("QToolTip { background-color: rgb(247, 255, 192); color: rgb(0, 0, 63); }")
 
     # Qt/ROS bringup
     ros_thread = Thread(target=backend.spin)
