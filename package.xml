@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>grbl_ros2_gui</name>
-  <version>1.0.0</version>
+  <version>0.1.0</version>
   <description>TODO: Package description</description>
   <maintainer email="liushuya7@gmail.com">Joshua Liu</maintainer>
   <license>MIT</license>
@@ -11,6 +11,12 @@
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
+
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz</exec_depend>
+  <exec_depend>xacro</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>

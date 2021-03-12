@@ -1,0 +1,196 @@
+<?xml version="1.0" ?>
+
+<robot name="laser" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Modele Parameters (m)-->
+    <xacro:property name="metal_plate_length" value="0.43"/>
+    <xacro:property name="metal_plate_width" value="0.20"/>
+    <xacro:property name="metal_plate_to_rotary_center_height" value="0.080"/>
+    <xacro:property name="rotary_center_to_rotary_top" value="0.1263"/>
+    <xacro:property name="rotary_center_to_linear_stage_x" value="0.102"/>
+    <xacro:property name="rotary_center_to_linear_stage_y" value="-0.207"/>
+    <xacro:property name="rotary_center_to_linear_stage_z" value="0.2186"/>
+
+    <xacro:property name="laser_rad" value="0.015"/>
+    <xacro:property name="laser_height" value="0.069"/>
+    <xacro:property name="rail_width" value="0.04"/>
+    <xacro:property name="y_rail_length" value="0.42"/>
+    <xacro:property name="x_rail_length" value="0.347"/>
+
+    <!-- Joint Parameters -->
+    <xacro:property name="X_limit" value="-0.290"/>
+    <xacro:property name="Y_limit" value="-0.280"/>
+    <xacro:property name="Z_limit" value="-0.065"/>
+    <xacro:property name="A_limit" value="-2.617"/>
+    <xacro:property name="B_limit" value="-62.8"/>
+    <xacro:property name="Y_joint_offset" value="0.08"/>
+    <xacro:property name="X_joint_offset" value="0.03"/>
+
+    <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+    </material>
+
+    <material name="gray">
+        <color rgba="0.50196 0.50196 0.50196 1"/>
+    </material>
+
+    <material name="dark red">
+        <color rgba="0.6 0 0 1"/>
+    </material>
+
+    <material name="white">
+        <color rgba="1 1 1 1"/>
+    </material>
+
+    <link name="base_link">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 -0.0015"/>
+            <geometry>
+                <box size="${metal_plate_length} ${metal_plate_width} 0.003"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+    </link>
+    
+    <!-- Rotary Table -->
+
+    <link name="rotary_base">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://grbl_ros2_gui/meshes/rotary_base_link.STL"/>
+            </geometry>
+            <material name="gray"/>
+        </visual>
+    </link>
+
+    <joint name="base_link__rotary_base" type="fixed">
+        <axis xyz="0 0 1" />
+        <origin rpy="0 0 0" xyz="0.020 0 0"/>
+        <parent link="base_link"/>
+        <child link="rotary_base"/>
+    </joint>
+
+    <link name="rotary_base_invisible">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <box size="0 0 0"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <joint name="rotary_base__rotary_base_invisible" type="fixed">
+        <origin rpy="1.57 0 0" xyz="0 0 0"/>
+        <parent link="rotary_base"/>
+        <child link="rotary_base_invisible"/>
+    </joint>
+
+    <link name="rotary_middle">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://grbl_ros2_gui/meshes/rotary_middle_link.STL"/>
+            </geometry>
+            <material name="gray"/>
+        </visual>
+    </link>
+
+    <joint name="A" type="revolute">
+        <axis xyz="1 0 0" />
+        <limit effort="1000.0" lower="${A_limit}" upper="0" velocity="1" />
+        <origin rpy="0 0 0" xyz="0 ${metal_plate_to_rotary_center_height} 0"/>
+        <parent link="rotary_base_invisible"/> 
+        <child link="rotary_middle"/>
+    </joint>
+
+    <!-- rotary_top = Work Coordinate Frame -->
+    <link name="W">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://grbl_ros2_gui/meshes/rotary_top_link.STL"/>
+            </geometry>
+            <material name="white"/>
+        </visual>
+    </link>
+
+    <joint name="B" type="revolute">
+        <axis xyz="0 0 1" />
+        <limit effort="1000.0" lower="${B_limit}" upper="0" velocity="1" />
+        <origin rpy="0 0 0" xyz="0 0 ${rotary_center_to_rotary_top}"/>
+        <parent link="rotary_middle"/>
+        <child link="W"/>
+    </joint>
+
+    <!-- Linear Stage -->
+
+    <link name="y_box1">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 ${y_rail_length/2} 0"/>
+            <geometry>
+                <box size="${rail_width} ${y_rail_length} ${rail_width}"/>
+            </geometry>
+            <material name="dark red"/>
+        </visual>
+    </link>
+
+    <joint name="Z" type="prismatic">
+        <axis xyz="0 0 1" />
+        <limit effort="1000.0" lower="${Z_limit}" upper="0" velocity="1" />
+        <origin rpy="0 0 0" xyz="${rotary_center_to_linear_stage_x + X_joint_offset + rail_width/2} ${rotary_center_to_linear_stage_y - Y_joint_offset + rail_width/2 + laser_rad} ${metal_plate_to_rotary_center_height + rotary_center_to_linear_stage_z + laser_height - 1.5*rail_width}"/>
+        <parent link="rotary_base"/>
+        <child link="y_box1"/>
+    </joint>
+
+    <link name="y_box2">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 ${y_rail_length/2} 0"/>
+            <geometry>
+                <box size="${rail_width} ${y_rail_length} ${rail_width}"/>
+            </geometry>
+            <material name="dark red"/>
+        </visual>
+    </link>
+
+    <joint name="y_box1__y_box2" type="fixed">
+        <origin rpy="0 0 0" xyz="${-x_rail_length-rail_width} 0 0"/>
+        <parent link="y_box1"/>
+        <child link="y_box2"/>
+    </joint>
+
+    <link name="x_box">
+        <visual>
+            <origin rpy="0 0 0" xyz="${x_rail_length/2} 0 0"/>
+            <geometry>
+                <box size="${x_rail_length} ${rail_width} ${rail_width}"/>
+            </geometry>
+            <material name="dark red"/>
+        </visual>
+    </link>
+
+    <joint name="Y" type="prismatic">
+        <axis xyz="0 1 0" />
+        <limit effort="1000.0" lower="${Y_limit}" upper="0" velocity="1" />
+        <origin rpy="0 0 3.1415" xyz="${-rail_width/2} ${Y_joint_offset} ${rail_width}"/>
+        <parent link="y_box1"/>
+        <child link="x_box"/>
+    </joint>
+    
+    <!-- tool = Tool Coordinates Frame -->
+    <link name="T">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 ${laser_height/2}"/>
+            <geometry>
+                <cylinder radius="${laser_rad}" length="${laser_height}"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <joint name="X" type="prismatic">
+        <axis xyz="1 0 0" />
+        <limit effort="1000.0" lower="${X_limit}" upper="0" velocity="1" />
+        <origin rpy="0 0 3.1415" xyz="${X_joint_offset} ${rail_width/2+laser_rad} ${rail_width/2-laser_height}"/>
+        <parent link="x_box"/>
+        <child link="T"/>
+    </joint>
+</robot>

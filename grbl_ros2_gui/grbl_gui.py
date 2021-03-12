@@ -41,10 +41,11 @@ import rclpy
 
 class upperCaseValidator(QtGui.QValidator):
   def validate(self, string, pos):
-    return QtGui.QValidator.Acceptable, string.upper(), posQDialog, QtWidgets.QAbstractItemView, QtWidgets.QMessageBox
+    return QtGui.QValidator.Acceptable, string.upper(), pos
 
 class MainWindow(QtWidgets.QMainWindow):
 
+  publish_joint_states = pyqtSignal(object, object, name="publish_joint_states")
   set_ros_parameters = pyqtSignal(object, name="set_ros_parameters")
   request_shutdown = pyqtSignal(name="requestShutdown")
 
@@ -115,6 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
     self.__grblCom.sig_serialLock.connect(self.on_sig_serialLock)
 
     self.__decode = grblDecode(self.ui, self.log, self.__grblCom)
+    self.__decode.sig_publish_joint_states.connect(self.publish_joint_states)
     self.__grblCom.setDecodeur(self.__decode)
 
     self.__jog = grblJog(self.__grblCom)
@@ -2721,6 +2723,8 @@ def main():
 
     backend = Backend()
     window = MainWindow()
+    # Connect GUI signals to ROS backend slots
+    window.publish_joint_states.connect(backend.publish_joint_states)
     window.set_ros_parameters.connect(backend.set_ros_parameters)
     window.request_shutdown.connect(backend.terminate_ros_spinner)
 

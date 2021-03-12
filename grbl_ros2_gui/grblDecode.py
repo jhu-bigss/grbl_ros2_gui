@@ -29,6 +29,8 @@ from .grblError import grblError
 from .speedOverrides import *
 from .grblCom import grblCom
 
+import math
+
 
 class grblDecode(QObject):
   '''
@@ -37,6 +39,8 @@ class grblDecode(QObject):
   - Met a jour l'interface graphique.
   - Stocke des valeurs des parametres decodes.
   '''
+  sig_publish_joint_states = pyqtSignal(object, object)
+
   def __init__(self, ui, log, grbl: grblCom):
     super().__init__()
     self.ui = ui
@@ -205,6 +209,10 @@ class grblDecode(QObject):
           self.ui.lblPosC.setText('{:+0.3f}'.format(float(tblPos[5]))); self.ui.lblPosB.setToolTip(self.tr("Machine Position (MPos)."))
         else:
           self.ui.lblPosC.setText("-")
+        # Publish JointStates to ROS backend
+        joint_names = ['X','Y','Z','A','B','C'][:self.__nbAxis] 
+        joint_values = [float(i)*0.001 for i in tblPos[:3]] + [float(i)*math.pi/180 for i in tblPos[3:]]
+        self.sig_publish_joint_states.emit(joint_names, joint_values)
 
       elif D[:5] == "WPos:":
         # Mémorise la dernière position de travail reçue
