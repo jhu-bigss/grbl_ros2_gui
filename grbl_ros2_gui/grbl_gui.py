@@ -2735,7 +2735,7 @@ def main():
     result = app.exec_()
 
     # Shutdown
-    backend.node.get_logger().info("waiting for backend to terminate [GUI]")
+    backend.node.get_logger().info("grbl terminated [ROS]")
     ros_thread.join()
     rclpy.shutdown()
     sys.exit(result)

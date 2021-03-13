@@ -29,14 +29,14 @@ APP_NAME           = "cn5X++"
 APP_VERSION_STRING = "0.8.3"
 APP_VERSION_DATE   = "20210208"
 
-DEFAULT_NB_AXIS    = 3 # Laisser 3 permet de gerer un Grbl original a 3 axes
-DEFAULT_AXIS_NAMES = ['X', 'Y', 'Z']
+DEFAULT_NB_AXIS    = 5 # Laisser 3 permet de gerer un Grbl original a 3 axes
+DEFAULT_AXIS_NAMES = ['X', 'Y', 'Z', 'A', 'B']
 
 COM_DEFAULT_BAUD_RATE = 115200
 SERIAL_READ_TIMEOUT   = 250      # ms
 GRBL_QUERY_DELAY      =  75      # ms
 
-DEFAULT_JOG_SPEED     = 300
+DEFAULT_JOG_SPEED     = 1000
 
 class logSeverity(Enum):
   info    = 0

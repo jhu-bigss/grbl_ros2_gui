@@ -29,7 +29,7 @@ from .grblError import grblError
 from .speedOverrides import *
 from .grblCom import grblCom
 
-import math
+from math import radians
 
 
 class grblDecode(QObject):
@@ -210,9 +210,8 @@ class grblDecode(QObject):
         else:
           self.ui.lblPosC.setText("-")
         # Publish JointStates to ROS backend
-        joint_names = ['X','Y','Z','A','B','C'][:self.__nbAxis] 
-        joint_values = [float(i)*0.001 for i in tblPos[:3]] + [float(i)*math.pi/180 for i in tblPos[3:]]
-        self.sig_publish_joint_states.emit(joint_names, joint_values)
+        joint_values = [float(i)*0.001 for i in tblPos[:3]] + [radians(float(i)) for i in tblPos[3:]]
+        self.sig_publish_joint_states.emit(self.__axisNames, joint_values)
 
       elif D[:5] == "WPos:":
         # Mémorise la dernière position de travail reçue
