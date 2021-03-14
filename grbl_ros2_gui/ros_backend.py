@@ -14,11 +14,11 @@ from PyQt5.QtCore import pyqtSlot
 import rclpy
 from rclpy.qos import QoSProfile
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped
 from .rviz_interactive_marker import GRBLInteractiveMarker
 
 class Backend(QtCore.QObject):
 
+    sig_jog_axis = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -31,12 +31,13 @@ class Backend(QtCore.QObject):
             parameters=[
                 ('port', None),
                 ('baudrate', 0),
+                ('jog_speed', 1000.0)
             ])
         self.joint_pub = self.node.create_publisher(JointState, 'joint_states', qos_profile)
         self.joint_states = JointState()
 
-        self.rviz_interactive_markers = GRBLInteractiveMarker(self.node, ['rotary_middle','T'])
-        # self.im_pub = self.node.create_publisher(PoseStamped, '/posestamped', qos_profile)
+        self.rviz_interactive_markers = GRBLInteractiveMarker(self.node)
+        self.rviz_interactive_markers.sig_jog_axis.connect(self.sig_jog_axis)
 
         self.shutdown_requested = False
         self.node.get_logger().info("{0} node started".format(self.node.get_name()))
@@ -44,10 +45,6 @@ class Backend(QtCore.QObject):
 
     def spin(self):
         while rclpy.ok() and not self.shutdown_requested:
-            # ps = PoseStamped()
-            # ps.header.frame_id = 'T'
-            # ps.header.stamp = self.node.get_clock().now().to_msg()
-            # self.im_pub.publish(ps)
 
             rclpy.spin_once(self.node, timeout_sec=0.1)
 

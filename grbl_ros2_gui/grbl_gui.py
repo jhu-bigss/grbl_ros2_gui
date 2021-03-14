@@ -45,7 +45,7 @@ class upperCaseValidator(QtGui.QValidator):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-  publish_joint_states = pyqtSignal(object, object, name="publish_joint_states")
+  publish_ros_joint_states = pyqtSignal(object, object, name="publish_ros_joint_states")
   set_ros_parameters = pyqtSignal(object, name="set_ros_parameters")
   request_shutdown = pyqtSignal(name="requestShutdown")
 
@@ -116,7 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
     self.__grblCom.sig_serialLock.connect(self.on_sig_serialLock)
 
     self.__decode = grblDecode(self.ui, self.log, self.__grblCom)
-    self.__decode.sig_publish_joint_states.connect(self.publish_joint_states)
+    self.__decode.sig_publish_joint_states.connect(self.publish_ros_joint_states)
     self.__grblCom.setDecodeur(self.__decode)
 
     self.__jog = grblJog(self.__grblCom)
@@ -1964,6 +1964,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
   @pyqtSlot(float)
   def on_dsbJogSpeed_valueChanged(self, val: float):
+    self.set_ros_parameters.emit([rclpy.parameter.Parameter('jog_speed', rclpy.Parameter.Type.DOUBLE, val)])
     self.__jog.setJogSpeed(val)
 
 
@@ -2685,6 +2686,11 @@ class MainWindow(QtWidgets.QMainWindow):
       self.request_shutdown.emit()
       super().closeEvent(event)
 
+  @pyqtSlot(str)
+  def on_sig_jog_Rviz(self, gcode: str):
+    self.logGrbl.append("JogCmd received from Rviz:")
+    self.__grblCom.gcodePush(gcode)
+
 def main():
     # ROS init
     rclpy.init()
@@ -2724,9 +2730,10 @@ def main():
     backend = Backend()
     window = MainWindow()
     # Connect GUI signals to ROS backend slots
-    window.publish_joint_states.connect(backend.publish_joint_states)
+    window.publish_ros_joint_states.connect(backend.publish_joint_states)
     window.set_ros_parameters.connect(backend.set_ros_parameters)
     window.request_shutdown.connect(backend.terminate_ros_spinner)
+    backend.sig_jog_axis.connect(window.on_sig_jog_Rviz)
 
     # Qt/ROS bringup
     ros_thread = Thread(target=backend.spin)

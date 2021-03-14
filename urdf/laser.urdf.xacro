@@ -33,8 +33,8 @@
         <color rgba="0.50196 0.50196 0.50196 1"/>
     </material>
 
-    <material name="dark red">
-        <color rgba="0.6 0 0 1"/>
+    <material name="brown">
+        <color rgba="0.54902 0.27059 0.02745 1"/>
     </material>
 
     <material name="white">
@@ -130,7 +130,7 @@
             <geometry>
                 <box size="${rail_width} ${y_rail_length} ${rail_width}"/>
             </geometry>
-            <material name="dark red"/>
+            <material name="brown"/>
         </visual>
     </link>
 
@@ -148,7 +148,7 @@
             <geometry>
                 <box size="${rail_width} ${y_rail_length} ${rail_width}"/>
             </geometry>
-            <material name="dark red"/>
+            <material name="brown"/>
         </visual>
     </link>
 
@@ -164,7 +164,7 @@
             <geometry>
                 <box size="${x_rail_length} ${rail_width} ${rail_width}"/>
             </geometry>
-            <material name="dark red"/>
+            <material name="brown"/>
         </visual>
     </link>
 
