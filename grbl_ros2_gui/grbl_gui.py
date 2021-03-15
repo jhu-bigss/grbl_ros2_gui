@@ -2199,14 +2199,19 @@ class MainWindow(QtWidgets.QMainWindow):
     # Memorise les courses maxi pour calcul des jogs max.
     elif data[:4] == "$130":
       self.__maxTravel[0] = float(data[5:])
+      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_x', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$131":
       self.__maxTravel[1] = float(data[5:])
+      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_y', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$132":
       self.__maxTravel[2] = float(data[5:])
+      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_z', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$133":
       self.__maxTravel[3] = float(data[5:])
+      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_a', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$134":
       self.__maxTravel[4] = float(data[5:])
+      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_b', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$135":
       self.__maxTravel[5] = float(data[5:])
 

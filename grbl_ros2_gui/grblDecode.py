@@ -211,6 +211,7 @@ class grblDecode(QObject):
           self.ui.lblPosC.setText("-")
         # Publish JointStates to ROS backend
         joint_values = [float(i)*0.001 for i in tblPos[:3]] + [radians(float(i)) for i in tblPos[3:]]
+        joint_values[2] = - joint_values[2] # invert Z value
         self.sig_publish_joint_states.emit(self.__axisNames, joint_values)
 
       elif D[:5] == "WPos:":

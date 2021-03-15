@@ -33,6 +33,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         RESET = 2
         current_interactive_marker = self.server.get(feedback.marker_name)
         current_pose = current_interactive_marker.pose
+
         s = "Feedback from marker '" + feedback.marker_name
         s += "' / control '" + feedback.control_name + "'"
         mp = ""
@@ -52,10 +53,13 @@ class GRBLInteractiveMarker(QtCore.QObject):
                 # Reset interactive marker
                 self.server.setPose(feedback.marker_name, Pose())
                 # Send jog command to grbl
-                if feedback.marker_name == 'laser_head':
+                if feedback.marker_name == 'laser_xy':
                     jog_x = current_pose.position.x * 1000
-                    jog_y = - current_pose.position.y * 1000
+                    jog_y = current_pose.position.y * 1000
                     self.grbl_jog_axis(['X','Y'], [jog_x, jog_y])
+                elif feedback.marker_name == 'laser_z':
+                    jog_z = - current_pose.position.z * 1000
+                    self.grbl_jog_axis('Z', jog_z)
                 elif feedback.marker_name == 'rotary_a':
                     x = current_pose.orientation.x
                     y = current_pose.orientation.y
@@ -63,7 +67,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
                     w = current_pose.orientation.w
                     euler_angle = self.euler_from_quaternion(x, y, z, w)
                     jog_a = math.degrees(euler_angle[0])
-                    self.grbl_jog_axis('A',jog_a)
+                    self.grbl_jog_axis('A', jog_a)
                 elif feedback.marker_name == 'rotary_b':
                     x = current_pose.orientation.x
                     y = current_pose.orientation.y
@@ -81,6 +85,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         elif feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
             self.node.get_logger().debug(s + ": pose changed")
             # TODO: check if the pose exceeds the joint limit
+            # print(current_pose)
 
         elif feedback.event_type == InteractiveMarkerFeedback.MOUSE_DOWN:
             self.node.get_logger().debug(s + ": mouse down" + mp + ".")
@@ -128,14 +133,10 @@ class GRBLInteractiveMarker(QtCore.QObject):
         # Emit the gcode to grbl
         self.sig_jog_axis.emit(gcode)
 
-    def jogCancel(self):
-        self.__grblCom.clearCom()
-        self.__grblCom.realTimePush(REAL_TIME_JOG_CANCEL) # Commande realtime Jog Cancel
-
-    def make_marker_laser_head(self):
+    def make_marker_laser_xy(self):
         marker = Marker()
         marker.type = Marker.CYLINDER
-        marker.pose.position.z = 0.069/2
+        marker.pose.position.z = -0.069/2
         marker.scale.x = 0.03
         marker.scale.y = 0.03
         marker.scale.z = 0.069
@@ -143,6 +144,20 @@ class GRBLInteractiveMarker(QtCore.QObject):
         marker.color.g = 0.0
         marker.color.b = 0.0
         marker.color.a = 0.8  # Transparency
+
+        return marker
+
+    def make_marker_laser_z(self):
+        marker = Marker()
+        marker.type = Marker.CUBE
+        marker.pose.position.z = -0.0015
+        marker.scale.x = 0.43
+        marker.scale.y = 0.20
+        marker.scale.z = 0.003
+        marker.color.r = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 1.0
+        marker.color.a = 0.8
 
         return marker
 
@@ -170,19 +185,19 @@ class GRBLInteractiveMarker(QtCore.QObject):
 
         return marker
 
-    def make_interactive_marker_laser_head(self):
-        int_marker_laser_head = InteractiveMarker()
-        int_marker_laser_head.header.frame_id = 'T'
-        # int_marker_laser_head.pose = Pose()
-        int_marker_laser_head.scale = 0.1
-        int_marker_laser_head.name = 'laser_head'
-        int_marker_laser_head.description = "interactive marker " + int_marker_laser_head.name
+    def make_interactive_marker_laser_xy(self):
+        int_marker_laser_xy = InteractiveMarker()
+        int_marker_laser_xy.header.frame_id = 'T'
+        # int_marker_laser_xy.pose = Pose()
+        int_marker_laser_xy.scale = 0.1
+        int_marker_laser_xy.name = 'laser_xy'
+        int_marker_laser_xy.description = "interactive marker " + int_marker_laser_xy.name
 
         # insert laser head
         control = InteractiveMarkerControl()
         control.always_visible = True
-        control.markers.append(self.make_marker_laser_head())
-        int_marker_laser_head.controls.append(control)
+        control.markers.append(self.make_marker_laser_xy())
+        int_marker_laser_xy.controls.append(control)
 
         control = InteractiveMarkerControl()
         control.orientation.w = 1.0
@@ -191,7 +206,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         control.orientation.z = 0.0
         control.name = "move_x"
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-        int_marker_laser_head.controls.append(control)
+        int_marker_laser_xy.controls.append(control)
 
         control = InteractiveMarkerControl()
         control.orientation.w = 1.0
@@ -200,7 +215,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         control.orientation.z = 1.0
         control.name = "move_y"
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-        int_marker_laser_head.controls.append(control)
+        int_marker_laser_xy.controls.append(control)
 
         control = InteractiveMarkerControl()
         control.orientation.w = 1.0
@@ -209,9 +224,33 @@ class GRBLInteractiveMarker(QtCore.QObject):
         control.orientation.z = 0.0
         control.name = "move_xy"
         control.interaction_mode = InteractiveMarkerControl.MOVE_PLANE
-        int_marker_laser_head.controls.append(control)
+        int_marker_laser_xy.controls.append(control)
 
-        return int_marker_laser_head
+        return int_marker_laser_xy
+
+    def make_interactive_marker_laser_z(self):
+        int_marker_laser_z = InteractiveMarker()
+        int_marker_laser_z.header.frame_id = 'base_link'
+        # int_marker_laser_z.pose = Pose()
+        int_marker_laser_z.scale = 0.1
+        int_marker_laser_z.name = 'laser_z'
+        int_marker_laser_z.description = "interactive marker " + int_marker_laser_z.name
+
+        control = InteractiveMarkerControl()
+        control.always_visible = True
+        control.markers.append(self.make_marker_laser_z())
+        int_marker_laser_z.controls.append(control)
+
+        control = InteractiveMarkerControl()
+        control.orientation.w = 1.0
+        control.orientation.x = 0.0
+        control.orientation.y = 1.0
+        control.orientation.z = 0.0
+        control.name = "move_z"
+        control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
+        int_marker_laser_z.controls.append(control)
+
+        return int_marker_laser_z
 
     def make_interactive_marker_rotary_a(self):
         int_marker_rotary_a = InteractiveMarker()
@@ -231,7 +270,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         control.orientation.x = 1.0
         control.orientation.y = 0.0
         control.orientation.z = 0.0
-        control.name = "rotate_x"
+        control.name = "rotate_a"
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         int_marker_rotary_a.controls.append(control)
 
@@ -255,23 +294,26 @@ class GRBLInteractiveMarker(QtCore.QObject):
         control.orientation.x = 0.0
         control.orientation.y = 1.0
         control.orientation.z = 0.0
-        control.name = "rotate_z"
+        control.name = "rotate_b"
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         int_marker_rotary_b.controls.append(control)
 
         return int_marker_rotary_b
 
     def makeGroupIM(self):
-        int_marker_laser_head = self.make_interactive_marker_laser_head()
+        int_marker_laser_xy = self.make_interactive_marker_laser_xy()
+        int_marker_laser_z = self.make_interactive_marker_laser_z()
         int_marker_rotary_a = self.make_interactive_marker_rotary_a()
         int_marker_rotary_b = self.make_interactive_marker_rotary_b()
-        self.server.insert(int_marker_laser_head, feedback_callback=self.processFeedback)
+        self.server.insert(int_marker_laser_xy, feedback_callback=self.processFeedback)
+        self.server.insert(int_marker_laser_z, feedback_callback=self.processFeedback)
         self.server.insert(int_marker_rotary_a, feedback_callback=self.processFeedback)
         self.server.insert(int_marker_rotary_b, feedback_callback=self.processFeedback)
 
         self.menu_handler.insert("Jog Here", callback=self.processFeedback)
         self.menu_handler.insert("Reset", callback=self.processFeedback)
-        self.menu_handler.apply(self.server, int_marker_laser_head.name)
+        self.menu_handler.apply(self.server, int_marker_laser_xy.name)
+        self.menu_handler.apply(self.server, int_marker_laser_z.name)
         self.menu_handler.apply(self.server, int_marker_rotary_a.name)
         self.menu_handler.apply(self.server, int_marker_rotary_b.name)
 
