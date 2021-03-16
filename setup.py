@@ -29,7 +29,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'grbl_gui = grbl_ros2_gui.grbl_gui:main'
+            'grbl_gui = grbl_ros2_gui.grbl_gui:main',
+            'labjack_node = grbl_ros2_gui.ros_labjack_node:main'
         ],
     },
 )
