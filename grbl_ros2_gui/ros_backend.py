@@ -66,7 +66,7 @@ class Backend(QtCore.QObject):
     def set_ros_parameters(self, list_params):
         self.node.set_parameters(list_params)
 
-    def terminate_ros_spinner(self):
+    def terminate_ros_backend(self):
         self.node.get_logger().info("shutdown requested [ROS]")
         self.rviz_interactive_markers.terminate_interactive_marker_server()
         self.shutdown_requested = True

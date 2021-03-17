@@ -36,6 +36,7 @@ from grbl_ros2_gui.grblG28_30_1 import dlgG28_30_1
 from grbl_ros2_gui.cn5X_jog import dlgJog
 from grbl_ros2_gui.mainWindow import Ui_mainWindow
 from grbl_ros2_gui.ros_backend import Backend
+from grbl_ros2_gui.ros_labjack_node import LabjackPublisher
 
 import rclpy
 
@@ -2737,8 +2738,9 @@ def main():
     # Connect GUI signals to ROS backend slots
     window.publish_ros_joint_states.connect(backend.publish_joint_states)
     window.set_ros_parameters.connect(backend.set_ros_parameters)
-    window.request_shutdown.connect(backend.terminate_ros_spinner)
     backend.sig_jog_axis.connect(window.on_sig_jog_Rviz)
+
+    window.request_shutdown.connect(backend.terminate_ros_backend)
 
     # Qt/ROS bringup
     ros_thread = Thread(target=backend.spin)
