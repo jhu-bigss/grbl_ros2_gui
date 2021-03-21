@@ -20,7 +20,11 @@ setup(
         (os.path.join('share', package_name, 'meshes'), glob('meshes/*')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*'))
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools',
+                      'PyQt5',
+                      'pyserial',
+                      'LabJackPython',
+                      ],
     zip_safe=True,
     maintainer='Joshua Liu',
     maintainer_email='liushuya7@gmail.com',
@@ -30,7 +34,7 @@ setup(
     entry_points={
         'console_scripts': [
             'grbl_gui = grbl_ros2_gui.grbl_gui:main',
-            'labjack_node = grbl_ros2_gui.ros_labjack_node:main'
+            'labjack_node = labjack.labjack_node:main'
         ],
     },
 )
