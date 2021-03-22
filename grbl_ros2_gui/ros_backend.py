@@ -15,10 +15,11 @@ import rclpy
 from rclpy.qos import QoSProfile
 from sensor_msgs.msg import JointState
 from .rviz_interactive_marker import GRBLInteractiveMarker
+from std_msgs.msg import String
 
 class Backend(QtCore.QObject):
 
-    sig_jog_axis = QtCore.pyqtSignal(str)
+    sig_push_gcode = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -42,7 +43,9 @@ class Backend(QtCore.QObject):
         self.joint_states = JointState()
 
         self.rviz_interactive_markers = GRBLInteractiveMarker(self.node)
-        self.rviz_interactive_markers.sig_jog_axis.connect(self.sig_jog_axis)
+        self.rviz_interactive_markers.sig_jog_axis.connect(self.sig_push_gcode)
+
+        self.cmd_sub = self.node.create_subscription(String, 'cmd/gcode', self.push_gcode, qos_profile)
 
         self.shutdown_requested = False
         self.node.get_logger().info("{0} node started".format(self.node.get_name()))
@@ -65,6 +68,9 @@ class Backend(QtCore.QObject):
     @pyqtSlot(object)
     def set_ros_parameters(self, list_params):
         self.node.set_parameters(list_params)
+
+    def push_gcode(self, gcode):
+        self.sig_push_gcode.emit(gcode.data)
 
     def terminate_ros_backend(self):
         self.node.get_logger().info("shutdown requested [ROS]")

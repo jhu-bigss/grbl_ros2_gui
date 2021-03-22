@@ -36,7 +36,6 @@ from grbl_ros2_gui.grblG28_30_1 import dlgG28_30_1
 from grbl_ros2_gui.cn5X_jog import dlgJog
 from grbl_ros2_gui.mainWindow import Ui_mainWindow
 from grbl_ros2_gui.ros_backend import Backend
-from grbl_ros2_gui.ros_labjack_node import LabjackPublisher
 
 import rclpy
 
@@ -46,9 +45,9 @@ class upperCaseValidator(QtGui.QValidator):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-  publish_ros_joint_states = pyqtSignal(object, object, name="publish_ros_joint_states")
-  set_ros_parameters = pyqtSignal(object, name="set_ros_parameters")
-  request_shutdown = pyqtSignal(name="requestShutdown")
+  sig_publish_joint_states = QtCore.pyqtSignal(object, object)
+  sig_set_ros_parameters = QtCore.pyqtSignal(object)
+  sig_shutdown = QtCore.pyqtSignal()
 
   def __init__(self, parent=None):
 
@@ -117,7 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
     self.__grblCom.sig_serialLock.connect(self.on_sig_serialLock)
 
     self.__decode = grblDecode(self.ui, self.log, self.__grblCom)
-    self.__decode.sig_publish_joint_states.connect(self.publish_ros_joint_states)
+    self.__decode.sig_publish_joint_states.connect(self.sig_publish_joint_states)
     self.__grblCom.setDecodeur(self.__decode)
 
     self.__jog = grblJog(self.__grblCom)
@@ -1840,7 +1839,7 @@ class MainWindow(QtWidgets.QMainWindow):
       # Mémorise le dernier port série utilisé
       self.__settings.setValue("grblDevice", serialDevice)
       # Set ROS parameters: serialPort and baudRate
-      self.set_ros_parameters.emit([
+      self.sig_set_ros_parameters.emit([
                                     rclpy.parameter.Parameter('port', rclpy.Parameter.Type.STRING, serialDevice),
                                     rclpy.parameter.Parameter('baudrate', rclpy.Parameter.Type.INTEGER, baudRate)
                                    ])
@@ -1965,7 +1964,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
   @pyqtSlot(float)
   def on_dsbJogSpeed_valueChanged(self, val: float):
-    self.set_ros_parameters.emit([rclpy.parameter.Parameter('jog_speed', rclpy.Parameter.Type.DOUBLE, val)])
+    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('jog_speed', rclpy.Parameter.Type.DOUBLE, val)])
     self.__jog.setJogSpeed(val)
 
 
@@ -2200,19 +2199,19 @@ class MainWindow(QtWidgets.QMainWindow):
     # Memorise les courses maxi pour calcul des jogs max.
     elif data[:4] == "$130":
       self.__maxTravel[0] = float(data[5:])
-      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_x', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_x', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$131":
       self.__maxTravel[1] = float(data[5:])
-      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_y', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_y', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$132":
       self.__maxTravel[2] = float(data[5:])
-      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_z', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_z', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$133":
       self.__maxTravel[3] = float(data[5:])
-      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_a', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_a', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$134":
       self.__maxTravel[4] = float(data[5:])
-      self.set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_b', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('max_travel_b', rclpy.Parameter.Type.DOUBLE, float(data[5:]))])
     elif data[:4] == "$135":
       self.__maxTravel[5] = float(data[5:])
 
@@ -2689,12 +2688,11 @@ class MainWindow(QtWidgets.QMainWindow):
     self.setEnableDisableGroupes()
 
   def closeEvent(self, event):
-      self.request_shutdown.emit()
+      self.sig_shutdown.emit()
       super().closeEvent(event)
 
   @pyqtSlot(str)
-  def on_sig_jog_Rviz(self, gcode: str):
-    self.logGrbl.append("JogCmd received from Rviz:")
+  def on_sig_push_gcode(self, gcode: str):
     self.__grblCom.gcodePush(gcode)
 
 def main():
@@ -2736,11 +2734,11 @@ def main():
     backend = Backend()
     window = MainWindow()
     # Connect GUI signals to ROS backend slots
-    window.publish_ros_joint_states.connect(backend.publish_joint_states)
-    window.set_ros_parameters.connect(backend.set_ros_parameters)
-    backend.sig_jog_axis.connect(window.on_sig_jog_Rviz)
+    window.sig_publish_joint_states.connect(backend.publish_joint_states)
+    window.sig_set_ros_parameters.connect(backend.set_ros_parameters)
+    backend.sig_push_gcode.connect(window.on_sig_push_gcode)
 
-    window.request_shutdown.connect(backend.terminate_ros_backend)
+    window.sig_shutdown.connect(backend.terminate_ros_backend)
 
     # Qt/ROS bringup
     ros_thread = Thread(target=backend.spin)

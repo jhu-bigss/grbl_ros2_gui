@@ -1,14 +1,14 @@
 import os
 from glob import glob
-from setuptools import setup
+from setuptools import setup, find_packages
 # from setuptools import find_packages
 
 package_name = 'grbl_ros2_gui'
 
 setup(
     name=package_name,
-    version='0.0.0',
-    packages=[package_name],
+    version='0.1.0',
+    packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -34,7 +34,7 @@ setup(
     entry_points={
         'console_scripts': [
             'grbl_gui = grbl_ros2_gui.grbl_gui:main',
-            'labjack_node = labjack.labjack_node:main'
+            'labjack_node = labjack.labjack_node:main',
         ],
     },
 )
