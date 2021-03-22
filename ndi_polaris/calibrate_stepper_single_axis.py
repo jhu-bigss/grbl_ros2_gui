@@ -1,5 +1,6 @@
-import sys, time
+import os, sys, time
 import random
+import numpy as np
 
 import roslibpy
 
@@ -7,10 +8,11 @@ from PyQt5 import Qt, QtCore
 
 from sksurgerynditracker.nditracker import NDITracker
 
+rom_file_0 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'digitizer-02.rom'))
 
 SETTINGS = {
     "tracker type": "polaris",
-    "romfiles" : ["digitizer-02.rom"]
+    "romfiles" : [rom_file_0]
         }
 # TRACKER = NDITracker(SETTINGS)
 # TRACKER.start_tracking()
@@ -82,8 +84,11 @@ class MainWidget(Qt.QWidget):
   def calibrate(self):
     # Start tracking
     self.tracker.start_tracking()
+    print("Tracking Started")
     pose_measure_list = []
-    pose_measure_list.append(self.tracker.get_frame()[3])
+    distance_measure_list = []
+    time.sleep(1)
+    pose_measure_list.append(self.tracker.get_frame()[3][0])
     
     # Generate random gcode cmd list for single axis
     jnt_val_list = random.sample(range(0, self.axis_limit_spinBox.value()), self.num_of_measurement_spinBox.value())
@@ -98,17 +103,26 @@ class MainWidget(Qt.QWidget):
     if self.ros.is_connected:
       for cmd in gcode_send_list:
         self.cmd_pub.publish(roslibpy.Message({'data': cmd}))
-        time.sleep(3)
+        time.sleep(1)
         port_handles, timestamps, framenumbers, tracking, quality = self.tracker.get_frame()
-        pose_measure_list.append(tracking)
+        pose_measure_list.append(tracking[0])
       self.cmd_pub.unadvertise()
 
     # Stop tracking
     self.tracker.stop_tracking()
+    print("Tracking Stopped")
+    initial_pose = pose_measure_list.pop(0)
 
     # Process the measurement
     if self.axis_type_linear.isChecked():
-      print(pose_measure_list)
+      for pose in pose_measure_list:
+        distance_measure = np.linalg.norm(pose[:3,3] - initial_pose[:3,3])
+        distance_measure_list.append(distance_measure)
+
+    # np.savetxt("command.csv", jnt_val_list, delimiter = ',', fmt='%10.3f')
+    # np.savetxt("measurement.csv", distance_measure_list, delimiter = ',', fmt='%10.3f')
+    # print("File Saved")
+
 
   def closeEvent(self, event):
     # disconnect roslibpy client and close the tracker
