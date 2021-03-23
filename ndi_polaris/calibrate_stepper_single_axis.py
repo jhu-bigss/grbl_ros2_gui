@@ -1,6 +1,8 @@
 import os, sys, time
 import random
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 import roslibpy
 
@@ -9,6 +11,7 @@ from PyQt5 import Qt, QtCore
 from sksurgerynditracker.nditracker import NDITracker
 
 rom_file_0 = os.path.abspath(os.path.join(os.path.dirname(__file__), 'digitizer-02.rom'))
+tracking_sleep_interval = 2  # second
 
 SETTINGS = {
     "tracker type": "polaris",
@@ -52,6 +55,7 @@ class MainWidget(Qt.QWidget):
     self.num_of_measurement_spinBox = Qt.QSpinBox()
     self.num_of_measurement_spinBox.setValue(10)
     self.plot_chkBox = Qt.QCheckBox("Plot")
+    self.plot_chkBox.setChecked(True)
     self.run_btn = Qt.QPushButton("Calibrate")
 
     self.run_btn.clicked.connect(self.calibrate)
@@ -91,9 +95,10 @@ class MainWidget(Qt.QWidget):
     pose_measure_list.append(self.tracker.get_frame()[3][0])
     
     # Generate random gcode cmd list for single axis
-    jnt_val_list = random.sample(range(0, self.axis_limit_spinBox.value()), self.num_of_measurement_spinBox.value())
-    jnt_val_list.sort()
     axis_name = self.axis_name_comboBox.currentText()
+    axis_range = range(0, self.axis_limit_spinBox.value())
+    jnt_val_list = random.sample(axis_range, self.num_of_measurement_spinBox.value())
+    jnt_val_list.sort()
     gcode = "G0{}".format(axis_name)
     gcode_send_list = []
     for val in jnt_val_list:
@@ -103,7 +108,7 @@ class MainWidget(Qt.QWidget):
     if self.ros.is_connected:
       for cmd in gcode_send_list:
         self.cmd_pub.publish(roslibpy.Message({'data': cmd}))
-        time.sleep(1)
+        time.sleep(tracking_sleep_interval)
         port_handles, timestamps, framenumbers, tracking, quality = self.tracker.get_frame()
         pose_measure_list.append(tracking[0])
       self.cmd_pub.unadvertise()
@@ -119,9 +124,25 @@ class MainWidget(Qt.QWidget):
         distance_measure = np.linalg.norm(pose[:3,3] - initial_pose[:3,3])
         distance_measure_list.append(distance_measure)
 
-    # np.savetxt("command.csv", jnt_val_list, delimiter = ',', fmt='%10.3f')
-    # np.savetxt("measurement.csv", distance_measure_list, delimiter = ',', fmt='%10.3f')
-    # print("File Saved")
+      # (Optional) Store data using pandas DataFrame
+      data = {'command':jnt_val_list, 'measure':distance_measure_list}
+      data = pd.DataFrame(data)
+      x = data.command
+      y = data.measure
+
+      # line fitting
+      model = np.polyfit(x, y, 1)
+      print(model)
+      predict = np.poly1d(model)
+
+      # Plotting
+      y_lin_reg = predict(axis_range)
+      plt.scatter(x, y)
+      plt.plot(axis_range, y_lin_reg, c = 'r')
+      plt.xlabel("Command")
+      plt.ylabel("Measurement")
+      plt.show()
+
 
 
   def closeEvent(self, event):
