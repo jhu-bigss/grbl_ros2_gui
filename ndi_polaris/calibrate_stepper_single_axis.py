@@ -3,6 +3,7 @@ import random
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.spatial.transform import Rotation as R
 
 import roslibpy
 
@@ -90,7 +91,7 @@ class MainWidget(Qt.QWidget):
     self.tracker.start_tracking()
     print("Tracking Started")
     pose_measure_list = []
-    distance_measure_list = []
+    diff_measure_list = []
     time.sleep(1)
     pose_measure_list.append(self.tracker.get_frame()[3][0])
     
@@ -122,27 +123,34 @@ class MainWidget(Qt.QWidget):
     if self.axis_type_linear.isChecked():
       for pose in pose_measure_list:
         distance_measure = np.linalg.norm(pose[:3,3] - initial_pose[:3,3])
-        distance_measure_list.append(distance_measure)
+        diff_measure_list.append(distance_measure)
 
-      # (Optional) Store data using pandas DataFrame
-      data = {'command':jnt_val_list, 'measure':distance_measure_list}
-      data = pd.DataFrame(data)
-      x = data.command
-      y = data.measure
+    if self.axis_type_angular.isChecked():
+      initial_r = R.from_matrix(initial_pose[:3,:3])
+      initial_angle = initial_r.as_euler('zyx', degrees=True)
+      for pose in pose_measure_list:
+        r = R.from_matrix(pose[:3,:3])
+        angle_measure = r.as_euler('zyx', degrees=True) - initial_angle
+        diff_measure_list.append(-angle_measure[0]) # assuming rotate about z-axis of the marker
 
-      # line fitting
-      model = np.polyfit(x, y, 1)
-      print(model)
-      predict = np.poly1d(model)
+    # Store data using pandas DataFrame
+    data = {'command':jnt_val_list, 'measure':diff_measure_list}
+    data = pd.DataFrame(data)
+    x = data.command
+    y = data.measure
 
-      # Plotting
-      y_lin_reg = predict(axis_range)
-      plt.scatter(x, y)
-      plt.plot(axis_range, y_lin_reg, c = 'r')
-      plt.xlabel("Command")
-      plt.ylabel("Measurement")
-      plt.show()
+    # line fitting
+    model = np.polyfit(x, y, 1)
+    print(model)
+    predict = np.poly1d(model)
 
+    # Plotting
+    y_lin_reg = predict(axis_range)
+    plt.scatter(x, y)
+    plt.plot(axis_range, y_lin_reg, c = 'r')
+    plt.xlabel("Command")
+    plt.ylabel("Measurement")
+    plt.show()
 
 
   def closeEvent(self, event):
