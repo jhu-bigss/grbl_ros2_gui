@@ -34,7 +34,7 @@ DEFAULT_AXIS_NAMES = ['X', 'Y', 'Z', 'A', 'B']
 
 COM_DEFAULT_BAUD_RATE = 115200
 SERIAL_READ_TIMEOUT   = 250      # ms
-GRBL_QUERY_DELAY      =  75      # ms
+GRBL_QUERY_DELAY      =  75      # ms, default 13.3 Hz
 
 DEFAULT_JOG_SPEED     = 1000
 
