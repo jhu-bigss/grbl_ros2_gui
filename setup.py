@@ -34,7 +34,7 @@ setup(
     entry_points={
         'console_scripts': [
             'grbl_gui = grbl_ros2_gui.grbl_gui:main',
-            'labjack_node = labjack.labjack_node:main',
+            'labjack_node = labjack.labjack_stream_analog_in:main',
         ],
     },
 )
