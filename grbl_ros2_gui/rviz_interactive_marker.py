@@ -58,7 +58,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
                     jog_y = current_pose.position.y * 1000
                     self.grbl_jog_axis(['X','Y'], [jog_x, jog_y])
                 elif feedback.marker_name == 'laser_z':
-                    jog_z = - current_pose.position.z * 1000
+                    jog_z = - current_pose.position.z * 1000  # flip sign
                     self.grbl_jog_axis('Z', jog_z)
                 elif feedback.marker_name == 'rotary_a':
                     x = current_pose.orientation.x
