@@ -5,6 +5,11 @@ from rclpy.qos import QoSProfile
 from sensor_msgs.msg import Range
 from std_msgs.msg import Float32
 
+# 4-20 mA corresponds to 0.472 to 2.36 volts that represents 0.035 -+ 0.015 m
+range_min = 0.02
+range_max = 0.05
+volts_min = 0.472
+volts_max = 2.36
 
 class LabjackProcessDataNode(Node):
 
@@ -17,22 +22,20 @@ class LabjackProcessDataNode(Node):
             QoSProfile(depth=10))
         self.pub = self.create_publisher(
             Range,
-            'range',
+            'labjack_range',
             QoSProfile(depth=10))
-        self.seq_id = 0
 
     def process_data_callback(self, msg):
         r = Range()
-        r.header.seq = self.seq_id
         r.header.stamp = self.get_clock().now().to_msg()
         r.header.frame_id = 'T'  # should be the frame name of the sensor
         r.radiation_type = 1
-        r.field_of_view = 0  # X axis of the sensor
-        r.min_range = 10
-        r.max_range = 30
-        r.range = msg.data
+        # r.field_of_view = 0.0  # X axis of the sensor
+        r.min_range = range_min
+        r.max_range = range_max
+        r.range =  range_min + (range_max - range_min) * (msg.data - volts_min) / (volts_max - volts_min)
         self.pub.publish(r)
-        self.seq_id += 1
+
 
 
 def main(args=None):
