@@ -65,6 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
     self.__settings = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, ORG_NAME, APP_NAME)
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--ros-args", action="store_true", help=self.tr("ROS arguments received"))
     parser.add_argument("-c", "--connect", action="store_true", help=self.tr("Connect the serial port"))
     parser.add_argument("-f", "--file", help=self.tr("Load the GCode file"))
     parser.add_argument("-l", "--lang", help=self.tr("Define the interface language"))
@@ -2695,9 +2696,9 @@ class MainWindow(QtWidgets.QMainWindow):
   def on_sig_push_gcode(self, gcode: str):
     self.__grblCom.gcodePush(gcode)
 
-def main():
+def main(args=None):
     # ROS init
-    rclpy.init()
+    rclpy.init(args=args)
 
     # GUI
     app = QtWidgets.QApplication(sys.argv)

@@ -28,14 +28,13 @@ class LabjackProcessDataNode(Node):
     def process_data_callback(self, msg):
         r = Range()
         r.header.stamp = self.get_clock().now().to_msg()
-        r.header.frame_id = 'T'  # should be the frame name of the sensor
+        r.header.frame_id = 'sensor'  # should be the frame name of the sensor
         r.radiation_type = 1
-        # r.field_of_view = 0.0  # X axis of the sensor
+        r.field_of_view = 0.017  # X axis of the sensor
         r.min_range = range_min
         r.max_range = range_max
-        r.range =  range_min + (range_max - range_min) * (msg.data - volts_min) / (volts_max - volts_min)
+        r.range = range_min + (range_max - range_min) * (msg.data - volts_min)/(volts_max - volts_min)
         self.pub.publish(r)
-
 
 
 def main(args=None):

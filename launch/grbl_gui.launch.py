@@ -9,10 +9,16 @@ def generate_launch_description():
     default_model_path = os.path.join(pkg_share, 'urdf/laser.urdf.xacro')
     default_rviz_config_path = os.path.join(pkg_share, 'rviz/laser.rviz')
 
+    grbl_node = launch_ros.actions.Node(
+        package='grbl_ros2_gui',
+        executable='grbl_gui',
+        arguments=['-c']
+    )
     robot_state_publisher_node = launch_ros.actions.Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{'robot_description': Command(['xacro ', LaunchConfiguration('model')])}]
+        parameters=[{'robot_description': Command(['xacro ', LaunchConfiguration('model')])},
+                    {'ignore_timestamp': True}]
     )
     joint_state_publisher_node = launch_ros.actions.Node(
         package='joint_state_publisher',
@@ -35,6 +41,7 @@ def generate_launch_description():
     )
 
     return launch.LaunchDescription([
+        grbl_node,
         launch.actions.DeclareLaunchArgument(name='gui', default_value='True',
                                              description='Flag to enable joint_state_publisher_gui'),
         launch.actions.DeclareLaunchArgument(name='model', default_value=default_model_path,

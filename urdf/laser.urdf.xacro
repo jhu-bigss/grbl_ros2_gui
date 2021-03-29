@@ -16,6 +16,9 @@
     <xacro:property name="rail_width" value="0.04"/>
     <xacro:property name="y_rail_length" value="0.42"/>
     <xacro:property name="x_rail_length" value="0.347"/>
+    <xacro:property name="sensor_offset_from_T_x" value="0.02"/>
+    <xacro:property name="sensor_offset_from_T_y" value="0.0"/>
+    <xacro:property name="sensor_offset_from_T_z" value="0.0"/>
 
     <!-- Joint Parameters -->
     <xacro:property name="X_limit" value="-0.280"/>
@@ -182,5 +185,22 @@
         <origin rpy="3.1415 0 0" xyz="${-X_joint_initial_offset} ${-rail_width/2-laser_rad} ${rail_width/2-laser_height}"/>
         <parent link="x_box"/>
         <child link="T"/>
+    </joint>
+
+    <!-- Distance Sensor Frame -->
+    <link name="sensor">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 ${-0.005}"/>
+            <geometry>
+                <cylinder radius="${0.0025}" length="${0.01}"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <joint name="T__sensor" type="fixed">
+        <axis xyz="1 0 0" />
+        <origin rpy="0 -1.57 0" xyz="${sensor_offset_from_T_x} ${sensor_offset_from_T_y} ${sensor_offset_from_T_z}"/>
+        <parent link="T"/>
+        <child link="sensor"/>
     </joint>
 </robot>
