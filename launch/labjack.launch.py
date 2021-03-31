@@ -6,7 +6,7 @@ import launch_ros
 def generate_launch_description():
     labjack_stream_node = launch_ros.actions.Node(
         package='grbl_ros2_gui',
-        executable='labjack_u3_stream',
+        executable='labjack_stream_device',
     )
     labjack_process_data_node = launch_ros.actions.Node(
         package='grbl_ros2_gui',
