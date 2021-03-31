@@ -16,9 +16,9 @@
     <xacro:property name="rail_width" value="0.04"/>
     <xacro:property name="y_rail_length" value="0.42"/>
     <xacro:property name="x_rail_length" value="0.347"/>
-    <xacro:property name="sensor_offset_from_T_x" value="0.02"/>
+    <xacro:property name="sensor_offset_from_T_x" value="0.027"/>
     <xacro:property name="sensor_offset_from_T_y" value="0.0"/>
-    <xacro:property name="sensor_offset_from_T_z" value="0.0"/>
+    <xacro:property name="sensor_offset_from_T_z" value="0.014"/>
 
     <!-- Joint Parameters -->
     <xacro:property name="X_limit" value="-0.280"/>
@@ -42,6 +42,10 @@
 
     <material name="white">
         <color rgba="1 1 1 1"/>
+    </material>
+
+    <material name="black">
+        <color rgba="0.2 0.2 0.2 1"/>
     </material>
 
     <!-- Rotary Base Frame is at the bottom of ratary platform -->
@@ -190,10 +194,11 @@
     <!-- Distance Sensor Frame -->
     <link name="sensor">
         <visual>
-            <origin rpy="0 0 0" xyz="0 0 ${-0.005}"/>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
             <geometry>
-                <cylinder radius="${0.0025}" length="${0.01}"/>
+                <mesh filename="package://grbl_ros2_gui/meshes/ODminiDistanceSensor.STL"/>
             </geometry>
+            <material name="black"/>
         </visual>
     </link>
 

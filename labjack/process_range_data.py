@@ -32,7 +32,7 @@ class LabjackProcessDataNode(Node):
         r.header.stamp = self.get_clock().now().to_msg()
         r.header.frame_id = sensor_frame_name
         r.radiation_type = 1
-        # r.field_of_view = 0.0  # X axis of the sensor
+        r.field_of_view = 0.01745  # one degree along X axis of the sensor for visulization
         r.min_range = range_min
         r.max_range = range_max
         r.range = range_min + (range_max - range_min) * (msg.data - volts_min)/(volts_max - volts_min)
