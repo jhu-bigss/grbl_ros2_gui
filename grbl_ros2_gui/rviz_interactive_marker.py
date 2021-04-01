@@ -189,7 +189,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         int_marker_laser_xy = InteractiveMarker()
         int_marker_laser_xy.header.frame_id = 'T'
         # int_marker_laser_xy.pose = Pose()
-        int_marker_laser_xy.scale = 0.1
+        int_marker_laser_xy.scale = 0.06
         int_marker_laser_xy.name = 'laser_xy'
         int_marker_laser_xy.description = "interactive marker " + int_marker_laser_xy.name
 
@@ -232,7 +232,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         int_marker_laser_z = InteractiveMarker()
         int_marker_laser_z.header.frame_id = 'base_link'
         # int_marker_laser_z.pose = Pose()
-        int_marker_laser_z.scale = 0.1
+        int_marker_laser_z.scale = 0.06
         int_marker_laser_z.name = 'laser_z'
         int_marker_laser_z.description = "interactive marker " + int_marker_laser_z.name
 
@@ -256,7 +256,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         int_marker_rotary_a = InteractiveMarker()
         int_marker_rotary_a.header.frame_id = 'rotary_middle'
         # int_marker_rotary_a.pose = Pose()
-        int_marker_rotary_a.scale = 0.1
+        int_marker_rotary_a.scale = 0.08
         int_marker_rotary_a.name = 'rotary_a'
         int_marker_rotary_a.description = "interactive marker " + int_marker_rotary_a.name
 
@@ -280,7 +280,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         int_marker_rotary_b = InteractiveMarker()
         int_marker_rotary_b.header.frame_id = 'W'
         # int_marker_rotary_b.pose = Pose()
-        int_marker_rotary_b.scale = 0.1
+        int_marker_rotary_b.scale = 0.07
         int_marker_rotary_b.name = 'rotary_b'
         int_marker_rotary_b.description = "interactive marker " + int_marker_rotary_b.name
 
