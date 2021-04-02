@@ -177,6 +177,18 @@ Visualization Manager:
         Value: /labjack_range
       Value: true
     - Alpha: 1
+      Class: rviz_default_plugins/Polygon
+      Color: 25; 255; 0
+      Enabled: true
+      Name: 3DScanArea
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /labjack_polygon
+      Value: true
+    - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -252,25 +264,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.874261736869812
+      Distance: 0.6947929263114929
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.2167171686887741
-        Y: 0.21005752682685852
-        Z: -0.043395817279815674
+        X: -0.15323194861412048
+        Y: 0.25265201926231384
+        Z: -0.0951375663280487
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6953980326652527
+      Pitch: 0.9297976493835449
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.983551025390625
+      Yaw: 4.955419540405273
     Saved: ~
 Window Geometry:
   Displays:
