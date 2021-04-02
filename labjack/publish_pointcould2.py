@@ -5,15 +5,17 @@ from rclpy.qos import QoSProfile
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from geometry_msgs.msg import Transform
+from geometry_msgs.msg import Transform, PolygonStamped, Polygon, Point32
 from sensor_msgs.msg import Range, PointField, PointCloud2
 from std_msgs.msg import Header
 
+from rcl_interfaces.srv import GetParameters
 # from std_srvs.srv import Trigger
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
+polygon_offset_distance = 0.035  # m
 
 class LabjackProfilerNode(Node):
 
@@ -23,21 +25,88 @@ class LabjackProfilerNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(buffer=self.tf_buffer, node=self, qos=QoSProfile(depth=10))
 
-        self.sub = self.create_subscription(
-            Range,
-            'labjack_range',
-            self.generate_pointcloud_callback,
+        self.pub_polygon = self.create_publisher(
+            PolygonStamped,
+            'labjack_polygon',
             QoSProfile(depth=10))
 
-        self.pub = self.create_publisher(
+        self.timer = self.create_timer(timer_period_sec=0.5, callback=self.publish_polygon_callback)
+
+        self.sub_range = self.create_subscription(
+            Range,
+            'labjack_range',
+            self.publish_pointcloud_callback,
+            QoSProfile(depth=10))
+
+        self.pub_pcd2 = self.create_publisher(
             PointCloud2,
             'labjack_pointcloud2',
             QoSProfile(depth=10))
 
-        self.current_transform = Transform()
-        self.points = []
+        # Create a service client to update scanning parameters from grbl node
+        self.client = self.create_client(GetParameters, '/grbl/get_parameters')
+        self.request = GetParameters.Request()
+        self.request.names = ['scan_mode',
+                              'scan_width',
+                              'scan_height',
+                              'scan_resolution',
+                              'scan_speed']
+        # Connect to grbl srv server
+        self.client.wait_for_service()
 
-    def generate_pointcloud_callback(self, range_msg):
+        # Declare scanning parameters
+        self.scan_mode = 0  # 0 is rectangular, 1 is circular
+        self.scan_width = 0.0
+        self.scan_height = 0.0
+        self.scan_resolution = 0.0
+        self.scan_speed = 0.0
+
+        self.scan_points = []
+        self.current_transform = Transform()
+
+    def update_param_callback(self, future):
+        try:
+            result = future.result()
+        except Exception as e:
+            self.get_logger().warn("service call failed %r" % (e,))
+        else:
+            self.scan_mode = result.values[0].integer_value
+            self.scan_width = result.values[1].double_value * 0.001  # convert mm to m
+            self.scan_height = result.values[2].double_value * 0.001
+            self.scan_resolution = result.values[3].double_value * 0.001
+            self.scan_speed = result.values[4].double_value
+
+    def publish_polygon_callback(self):
+        # Update scanning parameters from grbl node
+        future = self.client.call_async(self.request)
+        future.add_done_callback(self.update_param_callback)
+
+        polygon_stamped = PolygonStamped()
+        polygon_stamped.header = Header(frame_id='sensor')
+        if self.scan_mode == 0:
+            polygon_stamped.polygon = self.generate_rectangular_polygon(self.scan_width, self.scan_height)
+        elif self.scan_mode == 1:
+            polygon_stamped.polygon = self.generate_circular_polygon(self.scan_width)
+        self.pub_polygon.publish(polygon_stamped)
+
+    def generate_rectangular_polygon(self, width, height):
+        polygon_rect = Polygon()
+        polygon_rect.points.append(Point32(x=polygon_offset_distance,y=height/2,z=width/2))
+        polygon_rect.points.append(Point32(x=polygon_offset_distance,y=height/2,z=-width/2))
+        polygon_rect.points.append(Point32(x=polygon_offset_distance,y=-height/2,z=-width/2))
+        polygon_rect.points.append(Point32(x=polygon_offset_distance,y=-height/2,z=width/2))
+        return polygon_rect
+
+    def generate_circular_polygon(self, radius):
+        polygon_circle = Polygon()
+        theta = np.linspace(0, 2*np.pi, 150)
+        a = radius * np.cos(theta)
+        b = radius * np.sin(theta)
+        for h, v in zip(a, b):
+            polygon_circle.points.append(Point32(x=polygon_offset_distance,y=v,z=h))
+        return polygon_circle
+
+    def publish_pointcloud_callback(self, range_msg):
         try:
             trans = self.tf_buffer.lookup_transform('W', 'sensor', time=rclpy.time.Time())
         except:
@@ -64,13 +133,13 @@ class LabjackProfilerNode(Node):
 
                     # Transform the measured point, add to the point cloud
                     point_W = H_trans_W__S.dot(point_S)
-                    self.points.append(point_W[:3])
+                    self.scan_points.append(point_W[:3])
 
             # Create pointcloud2 message and publish
-            pcd = self.point_cloud(np.asarray(self.points), 'W')
-            self.pub.publish(pcd)
+            pcd = self.generate_point_cloud(np.asarray(self.scan_points), 'W')
+            self.pub_pcd2.publish(pcd)
 
-    def point_cloud(self, points, parent_frame):
+    def generate_point_cloud(self, points, parent_frame):
         """ Creates a point cloud message.
         Args:
             points: Nx3 array of xyz positions.

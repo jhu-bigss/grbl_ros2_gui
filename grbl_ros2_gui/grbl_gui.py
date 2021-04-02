@@ -376,6 +376,14 @@ class MainWindow(QtWidgets.QMainWindow):
     self.ui.btnHomePlusY.clicked.connect(lambda: self.on_btnHomeXY("plusY"))
     self.ui.btnResetResults.clicked.connect(self.resetProbeResults)
 
+    # Setup ROS parameters updates
+    self.ui.radioButton_rectangular.clicked.connect(self.setScanMode)
+    self.ui.radioButton_circular.clicked.connect(self.setScanMode)
+    self.ui.doubleSpinBox_param_1.valueChanged.connect(self.setScanWidth)
+    self.ui.doubleSpinBox_param_2.valueChanged.connect(self.setScanHeight)
+    self.ui.doubleSpinBox_param_3.valueChanged.connect(self.setScanResolution)
+    self.ui.doubleSpinBox_param_4.valueChanged.connect(self.setScanSpeed)
+
     #--------------------------------------------------------------------------------------
     # Traitement des arguments de la ligne de commande
     #--------------------------------------------------------------------------------------
@@ -2692,6 +2700,30 @@ class MainWindow(QtWidgets.QMainWindow):
       self.sig_shutdown.emit()
       super().closeEvent(event)
 
+  def setScanMode(self):
+    if self.ui.radioButton_rectangular.isChecked():
+      self.ui.label_param_1.setText("Width")
+      self.ui.label_param_2.setText("Height")
+      self.ui.doubleSpinBox_param_2.setEnabled(True)
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_mode', rclpy.Parameter.Type.INTEGER, 0)])
+    elif self.ui.radioButton_circular.isChecked():
+      self.ui.label_param_1.setText("Radius")
+      self.ui.label_param_2.setText("")
+      self.ui.doubleSpinBox_param_2.setEnabled(False)
+      self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_mode', rclpy.Parameter.Type.INTEGER, 1)])
+
+  def setScanWidth(self, value):
+    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_width', rclpy.Parameter.Type.DOUBLE, value)])
+
+  def setScanHeight(self, value):
+    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_height', rclpy.Parameter.Type.DOUBLE, value)])
+
+  def setScanResolution(self, value):
+    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_resolution', rclpy.Parameter.Type.DOUBLE, value)])
+
+  def setScanSpeed(self, value):
+    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_speed', rclpy.Parameter.Type.DOUBLE, value)])
+
   @pyqtSlot(str)
   def on_sig_push_gcode(self, gcode: str):
     self.__grblCom.gcodePush(gcode)
@@ -2737,9 +2769,17 @@ def main(args=None):
     # Connect GUI signals to ROS backend slots
     window.sig_publish_joint_states.connect(backend.publish_joint_states)
     window.sig_set_ros_parameters.connect(backend.set_ros_parameters)
+    window.sig_shutdown.connect(backend.terminate_ros_backend)
     backend.sig_push_gcode.connect(window.on_sig_push_gcode)
 
-    window.sig_shutdown.connect(backend.terminate_ros_backend)
+    # Initialize ROS parameters with GUI default
+    window.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('jog_speed', rclpy.Parameter.Type.DOUBLE, DEFAULT_JOG_SPEED),
+                                      rclpy.parameter.Parameter('scan_mode', rclpy.Parameter.Type.INTEGER, 0),
+                                      rclpy.parameter.Parameter('scan_width', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_1.value()),
+                                      rclpy.parameter.Parameter('scan_height', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_2.value()),
+                                      rclpy.parameter.Parameter('scan_resolution', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_3.value()),
+                                      rclpy.parameter.Parameter('scan_speed', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_4.value())
+                                      ])
 
     # Qt/ROS bringup
     ros_thread = Thread(target=backend.spin)
