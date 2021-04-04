@@ -49,6 +49,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
   sig_publish_joint_states = QtCore.pyqtSignal(object, object)
   sig_set_ros_parameters = QtCore.pyqtSignal(object)
+  sig_send_scan_on_off_srv_request = QtCore.pyqtSignal()
+  sig_send_scan_reset_srv_request = QtCore.pyqtSignal()
   sig_shutdown = QtCore.pyqtSignal()
 
   def __init__(self, parent=None):
@@ -143,6 +145,8 @@ class MainWindow(QtWidgets.QMainWindow):
     self.__maxTravel        = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     self.__firstGetSettings = False
     self.__jogModContinue   = False
+    
+    self.__scanRunning = False
 
     '''---------- Preparation de l'interface ----------'''
 
@@ -383,9 +387,9 @@ class MainWindow(QtWidgets.QMainWindow):
     self.ui.radioButton_circular.clicked.connect(self.setScanMode)
     self.ui.doubleSpinBox_param_1.valueChanged.connect(self.setScanWidth)
     self.ui.doubleSpinBox_param_2.valueChanged.connect(self.setScanHeight)
-    self.ui.doubleSpinBox_param_3.valueChanged.connect(self.setScanResolution)
-    self.ui.doubleSpinBox_param_4.valueChanged.connect(self.setScanSpeed)
     self.ui.pushButton_scan_start.clicked.connect(self.startScan)
+    self.ui.pushButton_scan_pointcould_on_off.clicked.connect(self.send_scan_request)
+    self.ui.pushButton_scan_pointcould_reset.clicked.connect(self.resetScan)
 
     #--------------------------------------------------------------------------------------
     # Traitement des arguments de la ligne de commande
@@ -2710,7 +2714,7 @@ class MainWindow(QtWidgets.QMainWindow):
       self.ui.doubleSpinBox_param_2.setEnabled(True)
       self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_mode', rclpy.Parameter.Type.INTEGER, 0)])
     elif self.ui.radioButton_circular.isChecked():
-      self.ui.label_param_1.setText("Radius")
+      self.ui.label_param_1.setText("Diameter")
       self.ui.label_param_2.setText("")
       self.ui.doubleSpinBox_param_2.setEnabled(False)
       self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_mode', rclpy.Parameter.Type.INTEGER, 1)])
@@ -2721,29 +2725,47 @@ class MainWindow(QtWidgets.QMainWindow):
   def setScanHeight(self, value):
     self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_height', rclpy.Parameter.Type.DOUBLE, value)])
 
-  def setScanResolution(self, value):
-    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_resolution', rclpy.Parameter.Type.DOUBLE, value)])
-
-  def setScanSpeed(self, value):
-    self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_speed', rclpy.Parameter.Type.DOUBLE, value)])
-
   def startScan(self):
-    if self.ui.radioButton_rectangular.isChecked():
-      scan_width = self.ui.doubleSpinBox_param_1.value()
-      scan_height = self.ui.doubleSpinBox_param_2.value()
-      scan_resolution = self.ui.doubleSpinBox_param_3.value()
-      scan_speed = self.ui.doubleSpinBox_param_4.value()
-      current_X = float(self.ui.lblPosX.text())
-      current_Y = float(self.ui.lblPosY.text())
-      # Generate scan gcode
-      toolpath = RectangleZigzagPath(scan_speed=scan_speed)
-      gcode_blocks = toolpath.make(X_start=current_X-scan_width/2,Y_start=current_Y-scan_height/2,width=scan_width,height=scan_height)
-      # Push all the gcode to the buffer
-      for gcode in gcode_blocks:
-        self.__grblCom.gcodePush(gcode)
-    elif self.ui.radioButton_circular.isChecked():
-      print("Not implemented yet")
-      pass
+    if not self.__scanRunning:
+      self.__scanRunning = True
+      self.ui.pushButton_scan_start.setText("Stop")
+      if self.ui.radioButton_rectangular.isChecked():
+        scan_width = self.ui.doubleSpinBox_param_1.value()
+        scan_height = self.ui.doubleSpinBox_param_2.value()
+        scan_resolution = self.ui.doubleSpinBox_param_3.value()
+        scan_speed = self.ui.doubleSpinBox_param_4.value()
+        current_X = float(self.ui.lblPosX.text())
+        current_Y = float(self.ui.lblPosY.text())
+        # Generate scan gcode
+        toolpath = RectangleZigzagPath(tool_diameter=scan_resolution, scan_speed=scan_speed)
+        gcode_blocks = toolpath.make(X_start=current_X-scan_width/2,Y_start=current_Y-scan_height/2,width=scan_width,height=scan_height)
+        # Push all the gcode to the buffer
+        for gcode in gcode_blocks:
+          self.__grblCom.gcodePush(gcode)
+      elif self.ui.radioButton_circular.isChecked():
+        print("Not implemented yet")
+        pass
+    else:
+      self.__scanRunning = False
+      self.ui.pushButton_scan_start.setText("Start")
+      # Use emergency stop to terminate scanning
+      self.on_arretUrgence()
+
+  def resetScan(self):
+    self.__scanRunning = False
+    self.ui.pushButton_scan_start.setText("Start")
+    self.sig_send_scan_reset_srv_request.emit()
+      
+  def send_scan_request(self):
+    if self.ui.pushButton_scan_pointcould_on_off.isChecked():
+      self.ui.pushButton_scan_pointcould_on_off.setText("Pointcould ON")
+      self.ui.pushButton_scan_pointcould_on_off.setStyleSheet("background-color : lightblue")
+    else:
+      self.ui.pushButton_scan_pointcould_on_off.setText("Pointcould OFF")
+      self.ui.pushButton_scan_pointcould_on_off.setStyleSheet("")
+    # Send scan service request to labjack pointcould2 node through ROS backend
+    self.sig_send_scan_on_off_srv_request.emit()
+
 
   @pyqtSlot(str)
   def on_sig_push_gcode(self, gcode: str):
@@ -2790,6 +2812,8 @@ def main(args=None):
     # Connect GUI signals to ROS backend slots
     window.sig_publish_joint_states.connect(backend.publish_joint_states)
     window.sig_set_ros_parameters.connect(backend.set_ros_parameters)
+    window.sig_send_scan_on_off_srv_request.connect(backend.send_scan_on_off_request)
+    window.sig_send_scan_reset_srv_request.connect(backend.send_scan_reset_request)
     window.sig_shutdown.connect(backend.terminate_ros_backend)
     backend.sig_push_gcode.connect(window.on_sig_push_gcode)
 
@@ -2797,9 +2821,7 @@ def main(args=None):
     window.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('jog_speed', rclpy.Parameter.Type.DOUBLE, DEFAULT_JOG_SPEED),
                                       rclpy.parameter.Parameter('scan_mode', rclpy.Parameter.Type.INTEGER, 0),
                                       rclpy.parameter.Parameter('scan_width', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_1.value()),
-                                      rclpy.parameter.Parameter('scan_height', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_2.value()),
-                                      rclpy.parameter.Parameter('scan_resolution', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_3.value()),
-                                      rclpy.parameter.Parameter('scan_speed', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_4.value())
+                                      rclpy.parameter.Parameter('scan_height', rclpy.Parameter.Type.DOUBLE, window.ui.doubleSpinBox_param_2.value())
                                       ])
 
     # Qt/ROS bringup

@@ -17,6 +17,8 @@ from sensor_msgs.msg import JointState
 from .rviz_interactive_marker import GRBLInteractiveMarker
 from std_msgs.msg import String
 
+from std_srvs.srv import Trigger
+
 class Backend(QtCore.QObject):
 
     sig_push_gcode = QtCore.pyqtSignal(str)
@@ -50,6 +52,10 @@ class Backend(QtCore.QObject):
 
         self.cmd_sub = self.node.create_subscription(String, 'cmd/gcode', self.push_gcode, qos_profile)
 
+        self.cli_scan = self.node.create_client(Trigger, 'labjack_pointcloud2_publisher/scan_on_off')
+        self.cli_scan_reset = self.node.create_client(Trigger, 'labjack_pointcloud2_publisher/scan_reset')
+        self.req_scan = Trigger.Request()
+
         self.shutdown_requested = False
         self.node.get_logger().info("{0} node started".format(self.node.get_name()))
         # self.lock = threading.Lock()
@@ -60,6 +66,18 @@ class Backend(QtCore.QObject):
             rclpy.spin_once(self.node, timeout_sec=0.1)
 
         self.node.destroy_node()
+
+    @pyqtSlot()
+    def send_scan_on_off_request(self):
+        while not self.cli_scan.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('Scan ON/OFF service not available, waiting again...')
+        self.future = self.cli_scan.call_async(self.req_scan)
+
+    @pyqtSlot()
+    def send_scan_reset_request(self):
+        while not self.cli_scan_reset.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('Scan Reset service not available, waiting again...')
+        self.future = self.cli_scan_reset.call_async(self.req_scan)
 
     @pyqtSlot(object,object)
     def publish_joint_states(self, joint_names, joint_values):

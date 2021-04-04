@@ -52,8 +52,9 @@ class LabjackProfilerNode(Node):
         # Connect to grbl srv server
         self.client.wait_for_service()
 
-        # create service for starting/stopping the scan process
+        # create service for starting/stopping, reset the scan process
         self.srv_scan = self.create_service(Trigger, 'labjack_pointcloud2_publisher/scan_on_off', self.set_running)
+        self.srv_scan_reset = self.create_service(Trigger, 'labjack_pointcloud2_publisher/scan_reset', self.reset_pointcould)
 
         # Declare scanning parameters
         self.scan_mode = 0  # 0 is rectangular, 1 is circular
@@ -85,7 +86,7 @@ class LabjackProfilerNode(Node):
             if self.scan_mode == 0:
                 polygon_stamped.polygon = self.generate_rectangular_polygon(self.scan_width, self.scan_height)
             elif self.scan_mode == 1:
-                polygon_stamped.polygon = self.generate_circular_polygon(self.scan_width)
+                polygon_stamped.polygon = self.generate_circular_polygon(self.scan_width/2)
         self.pub_polygon.publish(polygon_stamped)
 
     def generate_rectangular_polygon(self, width, height):
@@ -112,28 +113,28 @@ class LabjackProfilerNode(Node):
             print('lookup_transform(): No transformation found')
         else:
             if self.running:
-            # update current transform if machine moved
-            # if self.current_transform != trans.transform:
-                self.current_transform = trans.transform
-                # Check if range values < range_min or > range_max
-                if range_msg.range <= range_msg.max_range and range_msg.range >= range_msg.min_range:
-                    point_S = np.array([range_msg.range, 0.0, 0.0, 1])
+                # update current transform if machine moved
+                if self.current_transform != trans.transform:
+                    self.current_transform = trans.transform
+                    # Check if range values < range_min or > range_max
+                    if range_msg.range <= range_msg.max_range and range_msg.range >= range_msg.min_range:
+                        point_S = np.array([range_msg.range, 0.0, 0.0, 1])
 
-                    # Homogeneous transformation from W to Sensor
-                    H_trans_W__S = np.eye(4)
-                    H_trans_W__S[:3,:3] = R.from_quat([
-                                                self.current_transform.rotation.x,
-                                                self.current_transform.rotation.y,
-                                                self.current_transform.rotation.z,
-                                                self.current_transform.rotation.w
-                                                ]).as_matrix()
-                    H_trans_W__S[0,3] = self.current_transform.translation.x
-                    H_trans_W__S[1,3] = self.current_transform.translation.y
-                    H_trans_W__S[2,3] = self.current_transform.translation.z
+                        # Homogeneous transformation from W to Sensor
+                        H_trans_W__S = np.eye(4)
+                        H_trans_W__S[:3,:3] = R.from_quat([
+                                                    self.current_transform.rotation.x,
+                                                    self.current_transform.rotation.y,
+                                                    self.current_transform.rotation.z,
+                                                    self.current_transform.rotation.w
+                                                    ]).as_matrix()
+                        H_trans_W__S[0,3] = self.current_transform.translation.x
+                        H_trans_W__S[1,3] = self.current_transform.translation.y
+                        H_trans_W__S[2,3] = self.current_transform.translation.z
 
-                    # Transform the measured point, add to the point cloud
-                    point_W = H_trans_W__S.dot(point_S)
-                    self.scan_points.append(point_W[:3])
+                        # Transform the measured point, add to the point cloud
+                        point_W = H_trans_W__S.dot(point_S)
+                        self.scan_points.append(point_W[:3])
 
             # Create pointcloud2 message and publish
             pcd = self.generate_point_cloud(np.asarray(self.scan_points), 'W')
@@ -186,9 +187,18 @@ class LabjackProfilerNode(Node):
         )
 
     def set_running(self, request, response):
+        '''
+        ROS service to turn ON/OFF the scanning mode
+        '''
         self.running = not self.running
         response.success = True
         response.message = "Running: {}".format(self.running)
+        return response
+
+    def reset_pointcould(self, request, response):
+        self.scan_points = []
+        response.success = True
+        response.message = "Reset Pointcould2"
         return response
 
 def main(args=None):
