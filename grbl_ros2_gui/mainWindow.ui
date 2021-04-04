@@ -8985,7 +8985,7 @@ G43.1</string>
                    <item row="3" column="2">
                     <widget class="QLabel" name="label_unit_mm_4">
                      <property name="text">
-                      <string>mm</string>
+                      <string>mm/min</string>
                      </property>
                     </widget>
                    </item>

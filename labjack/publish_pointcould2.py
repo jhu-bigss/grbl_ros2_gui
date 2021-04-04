@@ -10,7 +10,7 @@ from sensor_msgs.msg import Range, PointField, PointCloud2
 from std_msgs.msg import Header
 
 from rcl_interfaces.srv import GetParameters
-# from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -43,26 +43,27 @@ class LabjackProfilerNode(Node):
             'labjack_pointcloud2',
             QoSProfile(depth=10))
 
-        # Create a service client to update scanning parameters from grbl node
+        # Create a service client to update scanning parameters from grbl node for Rviz preview
         self.client = self.create_client(GetParameters, '/grbl/get_parameters')
         self.request = GetParameters.Request()
         self.request.names = ['scan_mode',
                               'scan_width',
-                              'scan_height',
-                              'scan_resolution',
-                              'scan_speed']
+                              'scan_height']
         # Connect to grbl srv server
         self.client.wait_for_service()
+
+        # create service for starting/stopping the scan process
+        self.srv_scan = self.create_service(Trigger, 'labjack_pointcloud2_publisher/scan_on_off', self.set_running)
 
         # Declare scanning parameters
         self.scan_mode = 0  # 0 is rectangular, 1 is circular
         self.scan_width = 0.0
         self.scan_height = 0.0
-        self.scan_resolution = 0.0
-        self.scan_speed = 0.0
 
         self.scan_points = []
         self.current_transform = Transform()
+
+        self.running = False
 
     def update_param_callback(self, future):
         try:
@@ -73,20 +74,18 @@ class LabjackProfilerNode(Node):
             self.scan_mode = result.values[0].integer_value
             self.scan_width = result.values[1].double_value * 0.001  # convert mm to m
             self.scan_height = result.values[2].double_value * 0.001
-            self.scan_resolution = result.values[3].double_value * 0.001
-            self.scan_speed = result.values[4].double_value
 
     def publish_polygon_callback(self):
-        # Update scanning parameters from grbl node
-        future = self.client.call_async(self.request)
-        future.add_done_callback(self.update_param_callback)
-
         polygon_stamped = PolygonStamped()
         polygon_stamped.header = Header(frame_id='sensor')
-        if self.scan_mode == 0:
-            polygon_stamped.polygon = self.generate_rectangular_polygon(self.scan_width, self.scan_height)
-        elif self.scan_mode == 1:
-            polygon_stamped.polygon = self.generate_circular_polygon(self.scan_width)
+        if not self.running:
+            # Update scanning parameters from grbl node
+            future = self.client.call_async(self.request)
+            future.add_done_callback(self.update_param_callback)
+            if self.scan_mode == 0:
+                polygon_stamped.polygon = self.generate_rectangular_polygon(self.scan_width, self.scan_height)
+            elif self.scan_mode == 1:
+                polygon_stamped.polygon = self.generate_circular_polygon(self.scan_width)
         self.pub_polygon.publish(polygon_stamped)
 
     def generate_rectangular_polygon(self, width, height):
@@ -112,8 +111,9 @@ class LabjackProfilerNode(Node):
         except:
             print('lookup_transform(): No transformation found')
         else:
+            if self.running:
             # update current transform if machine moved
-            if self.current_transform != trans.transform:
+            # if self.current_transform != trans.transform:
                 self.current_transform = trans.transform
                 # Check if range values < range_min or > range_max
                 if range_msg.range <= range_msg.max_range and range_msg.range >= range_msg.min_range:
@@ -184,6 +184,12 @@ class LabjackProfilerNode(Node):
             row_step=(itemsize * 3 * points.shape[0]),
             data=data
         )
+
+    def set_running(self, request, response):
+        self.running = not self.running
+        response.success = True
+        response.message = "Running: {}".format(self.running)
+        return response
 
 def main(args=None):
 

@@ -40,9 +40,7 @@ class Backend(QtCore.QObject):
                 ('max_travel_b', 0.0),
                 ('scan_mode', 0),
                 ('scan_width', 0.0),
-                ('scan_height', 0.0),
-                ('scan_resolution', 0.0),
-                ('scan_speed', 0.0)
+                ('scan_height', 0.0)
             ])
         self.joint_pub = self.node.create_publisher(JointState, 'joint_states', qos_profile)
         self.joint_states = JointState()

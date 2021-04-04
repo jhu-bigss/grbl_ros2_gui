@@ -37,6 +37,8 @@ from grbl_ros2_gui.cn5X_jog import dlgJog
 from grbl_ros2_gui.mainWindow import Ui_mainWindow
 from grbl_ros2_gui.ros_backend import Backend
 
+from grbl_ros2_gui.toolpath.rectangle_zigzag import RectangleZigzagPath
+
 import rclpy
 
 class upperCaseValidator(QtGui.QValidator):
@@ -383,6 +385,7 @@ class MainWindow(QtWidgets.QMainWindow):
     self.ui.doubleSpinBox_param_2.valueChanged.connect(self.setScanHeight)
     self.ui.doubleSpinBox_param_3.valueChanged.connect(self.setScanResolution)
     self.ui.doubleSpinBox_param_4.valueChanged.connect(self.setScanSpeed)
+    self.ui.pushButton_scan_start.clicked.connect(self.startScan)
 
     #--------------------------------------------------------------------------------------
     # Traitement des arguments de la ligne de commande
@@ -2723,6 +2726,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
   def setScanSpeed(self, value):
     self.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('scan_speed', rclpy.Parameter.Type.DOUBLE, value)])
+
+  def startScan(self):
+    if self.ui.radioButton_rectangular.isChecked():
+      scan_width = self.ui.doubleSpinBox_param_1.value()
+      scan_height = self.ui.doubleSpinBox_param_2.value()
+      scan_resolution = self.ui.doubleSpinBox_param_3.value()
+      scan_speed = self.ui.doubleSpinBox_param_4.value()
+      current_X = float(self.ui.lblPosX.text())
+      current_Y = float(self.ui.lblPosY.text())
+      # Generate scan gcode
+      toolpath = RectangleZigzagPath(scan_speed=scan_speed)
+      gcode_blocks = toolpath.make(X_start=current_X-scan_width/2,Y_start=current_Y-scan_height/2,width=scan_width,height=scan_height)
+      # Push all the gcode to the buffer
+      for gcode in gcode_blocks:
+        self.__grblCom.gcodePush(gcode)
+    elif self.ui.radioButton_circular.isChecked():
+      print("Not implemented yet")
+      pass
 
   @pyqtSlot(str)
   def on_sig_push_gcode(self, gcode: str):
