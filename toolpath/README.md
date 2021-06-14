@@ -3,3 +3,5 @@
 ## Dependencies
 * Pyvista
 * Trimesh
+* Shapely
+* pytransform3d
