@@ -65,25 +65,30 @@ def point_picking_callback(point):
     plotter.add_mesh(plane_normal_arrow, color='b', name='pocket_ref_plane_normal')
 
     # compute the transformation
+    # First, rotate along absolute z-axis (2)
     R_mat = active_matrix_from_angle(2, z_axis_rotate_angle)
-    M = np.identity(4)
-    M[:3,:3] = R_mat
+    M_1 = np.identity(4)
+    M_1[:3,:3] = R_mat
     
+    # Second, rotate z-axis to align with fit plane normal, then translate to picked point
     z_axis = np.array([0,0,1])
     R_axis_angle = axis_angle_from_two_directions(z_axis, plane_normal)
     R_mat = matrix_from_axis_angle(R_axis_angle)
-
-    H = np.identity(4)
-    H[:3,:3] = R_mat
-    H[:3,3] = picked_point
+    M_2 = np.identity(4)
+    M_2[:3,:3] = R_mat
+    M_2[:3,3] = picked_point
+    
+    # save transformations to file
+    np.savetxt('pocket_transformation_1.csv', M_1)
+    np.savetxt('pocket_transformation_2.csv', M_2)
     
     # extrude 2D path into a primitive shape, then apply the transformation
     global path2d_extruded_list
     path2d_extruded_list = []
     for input_path2d in input_path2d_list:
         path2d_extruded = input_path2d.extrude(extrude_height)
-        path2d_extruded.apply_transform(M)
-        path2d_extruded.apply_transform(H)
+        path2d_extruded.apply_transform(M_1)
+        path2d_extruded.apply_transform(M_2)
         path2d_extruded.slide(-extrude_height/2)
         path2d_extruded_list.append(path2d_extruded)
     for i, j, k in zip(range(len(path2d_extruded_list)), ['k', 'r', 'r'], [0.3, 0.5, 0.5]):
@@ -105,7 +110,7 @@ def rotate_angle_slider_callback(value):
 def m_key_callback():
     for extruded_primitive, file_name in zip(path2d_extruded_list, output_file_names):
         extruded_primitive.export(file_name)
-    f = open('position3d_extrudeheight_rotateangle.txt', 'a+')
+    f = open('pocket_position_extruheight_rotangle.txt', 'a+')
     f.truncate(0)
     np.savetxt(f, picked_point, fmt='%.3f', newline=' ')
     f.write('%.2f'%extrude_height)
