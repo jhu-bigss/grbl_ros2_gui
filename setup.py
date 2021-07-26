@@ -35,7 +35,8 @@ setup(
         'console_scripts': [
             'grbl_gui = grbl_ros2_gui.grbl_gui:main',
             'labjack_stream_device = labjack.stream_analog_read:main',
-            'labjack_process_data = labjack.process_range_data:main',
+            'labjack_range_data_publisher = labjack.publish_range_data:main',
+            'labjack_point_publisher = labjack.publish_point:main',
             'labjack_pointcould2_publisher = labjack.publish_pointcould2:main',
         ],
     },

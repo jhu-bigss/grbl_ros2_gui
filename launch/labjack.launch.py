@@ -8,9 +8,14 @@ def generate_launch_description():
         package='grbl_ros2_gui',
         executable='labjack_stream_device',
     )
-    labjack_process_data_node = launch_ros.actions.Node(
+    labjack_range_data_publisher_node = launch_ros.actions.Node(
         package='grbl_ros2_gui',
-        executable='labjack_process_data',
+        executable='labjack_range_data_publisher',
+        condition=launch.conditions.UnlessCondition(LaunchConfiguration('raw'))
+    )
+    labjack_point_publisher_node = launch_ros.actions.Node(
+        package='grbl_ros2_gui',
+        executable='labjack_point_publisher',
         condition=launch.conditions.UnlessCondition(LaunchConfiguration('raw'))
     )
     labjack_pointcloud_publisher_node = launch_ros.actions.Node(
@@ -23,6 +28,7 @@ def generate_launch_description():
         launch.actions.DeclareLaunchArgument(name='raw', default_value='False',
                                              description='Flag to stream LabJack raw data without processing'),
         labjack_stream_node,
-        labjack_process_data_node,
-        labjack_pointcloud_publisher_node
+        labjack_range_data_publisher_node,
+        labjack_point_publisher_node,
+        # labjack_pointcloud_publisher_node
     ])
