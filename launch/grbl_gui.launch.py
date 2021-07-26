@@ -9,10 +9,13 @@ def generate_launch_description():
     default_model_path = os.path.join(pkg_share, 'urdf/laser.urdf.xacro')
     default_rviz_config_path = os.path.join(pkg_share, 'rviz/laser.rviz')
 
+    config = os.path.join(pkg_share, 'config', 'grbl.yaml')
+
     grbl_node = launch_ros.actions.Node(
         package='grbl_ros2_gui',
         executable='grbl_gui',
-        arguments=['-c']
+        arguments=['-c'],  # -c, --connect: Connect the serial port
+        # parameters = [config]
     )
     robot_state_publisher_node = launch_ros.actions.Node(
         package='robot_state_publisher',
