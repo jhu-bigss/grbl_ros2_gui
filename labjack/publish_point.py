@@ -39,7 +39,7 @@ class LabjackProbeNode(Node):
 
     def publish_point_callback(self, range_msg):
         try:
-            trans = self.tf_buffer.lookup_transform('W', 'sensor', time=rclpy.time.Time())
+            trans = self.tf_buffer.lookup_transform('y_box1', 'sensor', time=rclpy.time.Time())
         except:
             print('lookup_transform(): No transformation found')
         else:
@@ -48,27 +48,27 @@ class LabjackProbeNode(Node):
                 point_S = np.array([range_msg.range, 0.0, 0.0, 1])
 
                 # Homogeneous transformation from W to Sensor
-                H_trans_W__S = np.eye(4)
-                H_trans_W__S[:3,:3] = R.from_quat([
-                                            self.current_transform.rotation.x,
-                                            self.current_transform.rotation.y,
-                                            self.current_transform.rotation.z,
-                                            self.current_transform.rotation.w
+                H_trans_M__S = np.eye(4)
+                H_trans_M__S[:3,:3] = R.from_quat([
+                                            trans.transform.rotation.x,
+                                            trans.transform.rotation.y,
+                                            trans.transform.rotation.z,
+                                            trans.transform.rotation.w
                                             ]).as_matrix()
-                H_trans_W__S[0,3] = self.current_transform.translation.x
-                H_trans_W__S[1,3] = self.current_transform.translation.y
-                H_trans_W__S[2,3] = self.current_transform.translation.z
+                H_trans_M__S[0,3] = trans.transform.translation.x
+                H_trans_M__S[1,3] = trans.transform.translation.y
+                H_trans_M__S[2,3] = trans.transform.translation.z
 
                 # Transform the measured point, add to the point cloud
-                point_W = H_trans_W__S.dot(point_S)
+                point_in_M = H_trans_M__S.dot(point_S)
                 
                 # Publish the point
                 point_stamped = PointStamped()
-                point_stamped.header.frame_id = 'W'
+                point_stamped.header.frame_id = 'y_box1'
                 point_stamped.header.stamp = self.get_clock().now().to_msg()
-                point_stamped.point.x = point_W[0]
-                point_stamped.point.y = point_W[1]
-                point_stamped.point.z = point_W[2]
+                point_stamped.point.x = point_in_M[0]
+                point_stamped.point.y = point_in_M[1]
+                point_stamped.point.z = point_in_M[2]
                 self.pub_point.publish(point_stamped)
 
 

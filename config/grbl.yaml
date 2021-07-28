@@ -8,8 +8,13 @@ grbl:
     max_travel_y: 280.0
     max_travel_z: 65.0
     port: "/dev/ttyACM0"
-    # 3D Scanning via hatching parameters
+    # SICK profiler scanning parameters
     # Mode: 0 - Rectangular, 1 - Circle
     scan_mode: 0
     scan_height: 100.0
     scan_width: 100.0
+    # ScanTech registration points {y_box1} unit in meters
+    ring_top_left: [-0.220556, 0.321296, -0.069628]
+    ring_top_right: [-0.078448, 0.325427, -0.069864]
+    ring_bottom_left: [-0.215818, 0.179873, -0.072110]
+    ring_bottom_right: [-0.074046, 0.184153, -0.072792]
