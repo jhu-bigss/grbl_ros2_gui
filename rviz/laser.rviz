@@ -121,6 +121,8 @@ Visualization Manager:
           Value: true
         base_link:
           Value: false
+        implant:
+          Value: false
         rotary_base:
           Value: false
         rotary_middle:
@@ -145,7 +147,8 @@ Visualization Manager:
               {}
             rotary_middle:
               W:
-                {}
+                implant:
+                  {}
           x_box:
             T:
               sensor:
@@ -221,6 +224,18 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: ImplantMesh
+      Namespaces:
+        implant: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /implant_mesh_rviz_marker
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -264,25 +279,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.7724579572677612
+      Distance: 0.7210214138031006
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.14230328798294067
-        Y: 0.21575018763542175
-        Z: -0.10705723613500595
+        X: -0.16348977386951447
+        Y: 0.21589595079421997
+        Z: -0.10521653294563293
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0347970724105835
+      Pitch: 0.9547978639602661
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.700407981872559
+      Yaw: 4.828551292419434
     Saved: ~
 Window Geometry:
   Displays:
@@ -298,5 +313,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1680
-  X: 1680
+  X: 1920
   Y: 0

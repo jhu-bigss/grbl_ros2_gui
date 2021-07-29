@@ -39,6 +39,7 @@ setup(
             'labjack_range_data_publisher = labjack.publish_range_data:main',
             'labjack_point_publisher = labjack.publish_point:main',
             'labjack_pointcould2_publisher = labjack.publish_pointcould2:main',
+            'register_implant_to_laser = grbl_ros2_gui.ros_register_implant_to_laser:main',
         ],
     },
 )
