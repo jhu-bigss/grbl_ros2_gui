@@ -141,6 +141,9 @@ if SAVE_GCODE:
     def inv_kins(th1, th2, p):
         """
         Inverse kinematics of the 5-axis laser systems
+        {W}: the workpiece frame
+        {O}: the rotary center frame
+        {M}: the machine frame
         
         Parameters
         ----------
@@ -170,20 +173,20 @@ if SAVE_GCODE:
                                 [0, 0, 1, 0],
                                 [0, 0, 0, 1]]).astype(np.float64) )
 
-        tf_L_O = np.empty((4,4))
-        tf_L_O[:3,:3] = np.array([[1, 0, 0],
+        tf_M_O = np.empty((4,4))
+        tf_M_O[:3,:3] = np.array([[1, 0, 0],
                                 [0, -1, 0],
                                 [0, 0, -1]])  # Rotate about x-axis by 180 degree
-        tf_L_O[:3,3] = np.array([-rotary_center_to_machine_x,
+        tf_M_O[:3,3] = np.array([-rotary_center_to_machine_x,
                                 -rotary_center_to_machine_y,
                                 rotary_center_to_machine_z-laser_focal_len])
-        tf_L_O[3,:] = [0, 0, 0, 1]
+        tf_M_O[3,:] = [0, 0, 0, 1]
 
         # Transform the point from {W} to {L}
-        tf_L_W = np.matmul(tf_L_O, tf_O_W)
-        p_in_L = tf_L_W.dot(p)
+        tf_M_W = np.matmul(tf_M_O, tf_O_W)
+        p_in_M = tf_M_W.dot(p)
 
-        return p_in_L[:3]
+        return p_in_M[:3]
         
     XYZAB_start = None
 
