@@ -32,17 +32,17 @@ class Backend(QtCore.QObject):
         self.node.declare_parameters(
             namespace='',
             parameters=[
-                ('port', None),
-                ('baudrate', None),
-                ('jog_speed', None),
-                ('max_travel_x', None),
-                ('max_travel_y', None),
-                ('max_travel_z', None),
-                ('max_travel_a', None),
-                ('max_travel_b', None),
-                ('scan_mode', None),
-                ('scan_width', None),
-                ('scan_height', None)
+                ('port', '/dev/ttyACM0'),
+                ('baudrate', 0),
+                ('jog_speed', 0.0),
+                ('max_travel_x', 0.0),
+                ('max_travel_y', 0.0),
+                ('max_travel_z', 0.0),
+                ('max_travel_a', 0.0),
+                ('max_travel_b', 0.0),
+                ('scan_mode', 0),
+                ('scan_width', 0.0),
+                ('scan_height', 0.0)
             ])
         self.joint_pub = self.node.create_publisher(JointState, 'joint_states', qos_profile)
         self.joint_states = JointState()
