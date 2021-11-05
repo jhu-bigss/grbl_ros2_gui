@@ -1,6 +1,5 @@
-A ROS2 GUI for interfacing with grbl device
-
-
+A ROS2 GUI for interfacing with grbl device.
+A project built on [cn5X](https://github.com/fra589/cn5X).
 
 ## Dependencies
 ### Xacro
