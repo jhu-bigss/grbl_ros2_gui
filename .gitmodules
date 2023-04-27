@@ -1,0 +1,3 @@
+[submodule "grbl_ros2_gui/cn5X"]
+	path = grbl_ros2_gui/cn5X
+	url = git@github.com:fra589/cn5X.git

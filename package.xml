@@ -19,6 +19,8 @@
   <exec_depend>xacro</exec_depend>
   <exec_depend>tf2_ros_py</exec_depend>
 
+  <exec_depend>python3-pyqt5.qtmultimedia</exec_depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>
