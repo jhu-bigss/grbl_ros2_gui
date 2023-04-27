@@ -11,9 +11,7 @@ def generate_launch_description():
 
     grbl_node = launch_ros.actions.Node(
         package='grbl_ros2_gui',
-        executable='grbl_gui',
-        arguments=['-c'],  # -c, --connect: Connect the serial port
-        parameters = [os.path.join(pkg_share, 'config', 'grbl.yaml')] # ROS parameters config file
+        executable='grbl_gui'
     )
     robot_state_publisher_node = launch_ros.actions.Node(
         package='robot_state_publisher',

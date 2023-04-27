@@ -127,7 +127,7 @@ class GRBLInteractiveMarker(QtCore.QObject):
         else:
             gcode += "{}{:0.3f}".format(jog_axis_name, jog_value)
         # Jog Speed mm/min
-        param_jog_speed = self.node.get_parameter('jog_speed')
+        param_jog_speed = self.node.get_parameter('jogSpeed')
         gcode += "F{:0.2f}".format(param_jog_speed.value)
         
         # Emit the gcode to grbl

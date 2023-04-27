@@ -23,6 +23,7 @@ from grbl_ros2_gui.toolpath.rectangle_zigzag import RectangleZigzagPath
 
 import rclpy
 
+
 def main(args=None):
     # ROS init
     rclpy.init(args=args)
@@ -66,14 +67,11 @@ def main(args=None):
     backend = Backend()
     window = winMain()
 
-    # Connect GUI signals to ROS backend slots
-    # window.sig_publish_joint_states.connect(backend.publish_joint_states)
-    # window.sig_set_ros_parameters.connect(backend.set_ros_parameters)
-    # window.sig_shutdown.connect(backend.terminate_ros_backend)
+    # Connect GUI main_window signals to ROS backend
+    window._winMain__grblCom.sig_status.connect(backend.update_status)
+    window.ui.dsbJogSpeed.valueChanged.connect(backend.update_jogSpeed)
+    window.destroyed.connect(backend.terminate_ros_backend)
     backend.sig_push_gcode.connect(window._winMain__grblCom.gcodePush)
-
-    # Initialize ROS parameters with GUI default
-    # window.sig_set_ros_parameters.emit([rclpy.parameter.Parameter('jog_speed', rclpy.Parameter.Type.DOUBLE, float(DEFAULT_JOG_SPEED))])
 
     # Qt/ROS bringup
     ros_thread = Thread(target=backend.spin)
@@ -82,7 +80,7 @@ def main(args=None):
     result = app.exec_()
 
     # Shutdown
-    backend.node.get_logger().info("grbl terminated [ROS]")
+    backend.node.get_logger().info("{0} terminated".format(backend.node.get_name()))
     ros_thread.join()
     rclpy.shutdown()
     sys.exit(result)
